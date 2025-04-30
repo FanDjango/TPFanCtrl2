@@ -1367,19 +1367,18 @@ FANCONTROL::DlgProc(HWND
 				if (state == 0) {  // Lid closed
 					this->isLidClosed = true;
 					this->Trace("Lid closed detected, will switch to BIOS mode.");
-					this->PreviousMode = this->CurrentMode;
+					this->previousModeBeforeLidClose = this->CurrentMode;
 					this->ModeToDialog(1);
 					ok = this->SetFan("Lid close, Switch to BIOS Mode", 0x80);
 					if (ok) {
 						this->Trace("Set to BIOS Mode due to lid close");
-						::Sleep(2000);
+						::Sleep(1000);
 					}
 				}
 				else { // Lid opened
 					if (this->isLidClosed) {
 						this->Trace("Lid opened detected, will switch to previous mode.");
-						//this->ModeToDialog(this->PreviousMode);
-						this->ModeToDialog(2);
+						this->ModeToDialog(this->previousModeBeforeLidClose);
 						this->Trace("Set to previous Mode due to lid open");
 					}
 					this->isLidClosed = false;
