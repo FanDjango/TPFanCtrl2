@@ -26,7 +26,7 @@
 #include "winstuff.h"
 #include "TaskbarTextIcon.h"
 
-#define FANCONTROLVERSION "2.3.2 Dual Fan"
+#define FANCONTROLVERSION "2.3.3 Dual Fan"
 
 #define WM__DISMISSDLG WM_USER+5
 #define WM__GETDATA WM_USER+6
@@ -237,6 +237,10 @@ protected:
 	int SetHdw(const char* source, int hdwctrl, int HdwOffset, int AnyWayBit);
 
 	LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam);
+
+	// for detecting lid closing
+	HPOWERNOTIFY hPowerNotify;
+	bool isLidClosed = false;
 
 	// misc.cpp
 	int ReadConfig(const char* filename);

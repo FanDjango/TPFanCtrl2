@@ -18,8 +18,11 @@
 #include "fancontrol.h"
 #include "tools.h"
 #include "taskbartexticon.h"
-#include "WinUser.h"
 #include "sysinfoapi.h"
+
+DEFINE_GUID(GUID_LIDSWITCH_STATE_CHANGE,
+	0xba3e0f4d, 0xb817, 0x4094,
+	0xa2, 0xd1, 0xd5, 0x63, 0x79, 0xe6, 0xa0, 0xf3);
 
 //-------------------------------------------------------------------------
 //  constructor
@@ -396,6 +399,7 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 		_itoa_s(this->ManFanSpeed, buf, 10);
 
 		::SetDlgItemText(this->hwndDialog, 8310, buf);
+		this->hPowerNotify = RegisterPowerSettingNotification(this->hwndDialog, &GUID_LIDSWITCH_STATE_CHANGE, DEVICE_NOTIFY_WINDOW_HANDLE);
 	}
 
 	if (SlimDialog == 1) {
@@ -539,6 +543,8 @@ FANCONTROL::~FANCONTROL() {
 		delete[] ppTbTextIcon;
 		ppTbTextIcon = NULL;
 	}
+
+	UnregisterPowerSettingNotification(this->hPowerNotify);
 
 	if (this->hwndDialog)
 		::DestroyWindow(this->hwndDialog);
@@ -1351,6 +1357,35 @@ FANCONTROL::DlgProc(HWND
 		//{MessageBox(NULL, "will Fenster schließen", "TPFanControl", MB_ICONEXCLAMATION);
 		::ShowWindow(this->hwndDialog, SW_MINIMIZE);   //}
 		rc = TRUE;
+		break;
+
+	case WM_POWERBROADCAST:
+		if (mp1 == PBT_POWERSETTINGCHANGE) {
+			POWERBROADCAST_SETTING* pbs = (POWERBROADCAST_SETTING*)mp2;
+			if (pbs->PowerSetting == GUID_LIDSWITCH_STATE_CHANGE) {
+				BYTE state = *(BYTE*)(&pbs->Data);
+				if (state == 0) {  // Lid closed
+					this->isLidClosed = true;
+					this->Trace("Lid closed detected, will switch to BIOS mode.");
+					this->PreviousMode = this->CurrentMode;
+					this->ModeToDialog(1);
+					ok = this->SetFan("Lid close, Switch to BIOS Mode", 0x80);
+					if (ok) {
+						this->Trace("Set to BIOS Mode due to lid close");
+						::Sleep(2000);
+					}
+				}
+				else { // Lid opened
+					if (this->isLidClosed) {
+						this->Trace("Lid opened detected, will switch to previous mode.");
+						//this->ModeToDialog(this->PreviousMode);
+						this->ModeToDialog(2);
+						this->Trace("Set to previous Mode due to lid open");
+					}
+					this->isLidClosed = false;
+				}
+			}
+		}
 		break;
 
 	case WM_ENDSESSION:  //WM_QUERYENDSESSION?
