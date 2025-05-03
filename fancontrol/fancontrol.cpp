@@ -1352,6 +1352,35 @@ FANCONTROL::DlgProc(HWND
 		}
 		break;
 
+	case WM_POWERBROADCAST:
+		if (mp1 == PBT_POWERSETTINGCHANGE) {
+			POWERBROADCAST_SETTING* pbs = (POWERBROADCAST_SETTING*)mp2;
+			if (pbs->PowerSetting == GUID_LIDSWITCH_STATE_CHANGE) {
+				BYTE state = *(BYTE*)(&pbs->Data);
+				if (state == 0) {  // Lid closed
+					this->isLidClosed = true;
+					this->previousModeBeforeLidClose = this->CurrentMode;
+					this->Trace("Lid closed detected, will close to BIOS mode.");
+					this->ModeToDialog(1);
+					ok = this->SetFan("Lid close, Switch to BIOS Mode", 0x80);
+					if (ok) {
+						this->Trace("Set to BIOS Mode");
+						::Sleep(1000);
+					}
+				}
+				else { // Lid opened
+					if (this->isLidClosed) {
+						// switch back to previous mode
+						this->ModeToDialog(this->previousModeBeforeLidClose);
+					}
+					this->isLidClosed = false;
+					this->Trace("Lid opened detected.");
+				}
+			}
+		}
+		break;
+
+
 	case WM_CLOSE:
 		//if (this->MinimizeOnClose && (this->MinimizeToSysTray || this->Runs_as_service))   // 0.24 new:  || this->Runs_as_service)
 		//{MessageBox(NULL, "will Fenster schließen", "TPFanControl", MB_ICONEXCLAMATION);

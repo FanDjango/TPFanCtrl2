@@ -17,4 +17,3 @@
 #include <stdio.h>
 #include "winuser.h"
 #include "windows.h"
-

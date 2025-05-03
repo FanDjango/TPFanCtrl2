@@ -242,7 +242,6 @@ protected:
 	HPOWERNOTIFY hPowerNotify;
 	bool isLidClosed = false;
 	int previousModeBeforeLidClose = -1;
-
 	// misc.cpp
 	int ReadConfig(const char* filename);
 
