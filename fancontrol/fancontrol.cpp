@@ -20,10 +20,9 @@
 #include "taskbartexticon.h"
 #include "sysinfoapi.h"
 
-
 DEFINE_GUID(GUID_LIDSWITCH_STATE_CHANGE,
-    0xba3e0f4d, 0xb817, 0x4094,
-    0xa2, 0xd1, 0xd5, 0x63, 0x79, 0xe6, 0xa0, 0xf3);
+	0xba3e0f4d, 0xb817, 0x4094,
+	0xa2, 0xd1, 0xd5, 0x63, 0x79, 0xe6, 0xa0, 0xf3);
 
 //-------------------------------------------------------------------------
 //  constructor
@@ -544,7 +543,9 @@ FANCONTROL::~FANCONTROL() {
 		delete[] ppTbTextIcon;
 		ppTbTextIcon = NULL;
 	}
+
 	UnregisterPowerSettingNotification(this->hPowerNotify);
+
 	if (this->hwndDialog)
 		::DestroyWindow(this->hwndDialog);
 
@@ -1351,6 +1352,13 @@ FANCONTROL::DlgProc(HWND
 		}
 		break;
 
+	case WM_CLOSE:
+		//if (this->MinimizeOnClose && (this->MinimizeToSysTray || this->Runs_as_service))   // 0.24 new:  || this->Runs_as_service)
+		//{MessageBox(NULL, "will Fenster schließen", "TPFanControl", MB_ICONEXCLAMATION);
+		::ShowWindow(this->hwndDialog, SW_MINIMIZE);   //}
+		rc = TRUE;
+		break;
+
 	case WM_POWERBROADCAST:
 		if (mp1 == PBT_POWERSETTINGCHANGE) {
 			POWERBROADCAST_SETTING* pbs = (POWERBROADCAST_SETTING*)mp2;
@@ -1358,33 +1366,25 @@ FANCONTROL::DlgProc(HWND
 				BYTE state = *(BYTE*)(&pbs->Data);
 				if (state == 0) {  // Lid closed
 					this->isLidClosed = true;
+					this->Trace("Lid closed detected, will switch to BIOS mode.");
 					this->previousModeBeforeLidClose = this->CurrentMode;
-					this->Trace("Lid closed detected, will close to BIOS mode.");
 					this->ModeToDialog(1);
 					ok = this->SetFan("Lid close, Switch to BIOS Mode", 0x80);
 					if (ok) {
-						this->Trace("Set to BIOS Mode");
+						this->Trace("Set to BIOS Mode due to lid close");
 						::Sleep(1000);
 					}
 				}
 				else { // Lid opened
 					if (this->isLidClosed) {
-						// switch back to previous mode
+						this->Trace("Lid opened detected, will switch to previous mode.");
 						this->ModeToDialog(this->previousModeBeforeLidClose);
+						this->Trace("Set to previous Mode due to lid open");
 					}
 					this->isLidClosed = false;
-					this->Trace("Lid opened detected.");
 				}
 			}
 		}
-		break;
-
-
-	case WM_CLOSE:
-		//if (this->MinimizeOnClose && (this->MinimizeToSysTray || this->Runs_as_service))   // 0.24 new:  || this->Runs_as_service)
-		//{MessageBox(NULL, "will Fenster schließen", "TPFanControl", MB_ICONEXCLAMATION);
-		::ShowWindow(this->hwndDialog, SW_MINIMIZE);   //}
-		rc = TRUE;
 		break;
 
 	case WM_ENDSESSION:  //WM_QUERYENDSESSION?
