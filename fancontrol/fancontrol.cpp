@@ -1353,9 +1353,7 @@ FANCONTROL::DlgProc(HWND
 		break;
 
 	case WM_CLOSE:
-		//if (this->MinimizeOnClose && (this->MinimizeToSysTray || this->Runs_as_service))   // 0.24 new:  || this->Runs_as_service)
-		//{MessageBox(NULL, "will Fenster schließen", "TPFanControl", MB_ICONEXCLAMATION);
-		::ShowWindow(this->hwndDialog, SW_MINIMIZE);   //}
+		::ShowWindow(this->hwndDialog, SW_MINIMIZE);
 		rc = TRUE;
 		break;
 
