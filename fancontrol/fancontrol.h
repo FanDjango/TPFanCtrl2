@@ -236,12 +236,12 @@ protected:
 
 	int SetHdw(const char* source, int hdwctrl, int HdwOffset, int AnyWayBit);
 
-	LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam);
-
-	// for detecting lid closing
 	HPOWERNOTIFY hPowerNotify;
+
 	bool isLidClosed = false;
+
 	int previousModeBeforeLidClose = -1;
+
 	// misc.cpp
 	int ReadConfig(const char* filename);
 
@@ -272,8 +272,6 @@ public:
 	FANCONTROL(HINSTANCE hinstapp);
 
 	~FANCONTROL();
-
-	void Test(void);
 
 	int ProcessDialog();
 
