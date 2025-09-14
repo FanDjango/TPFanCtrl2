@@ -63,8 +63,6 @@ MUTEXSEM::Unlock() {
 	int ok = ::ReleaseMutex(this->hmux);
 }
 
-
-
 //////////////////////////////////////////////////////////////////////////////
 //                                                                          // 
 //   TASKBARICON                                                            // 
@@ -136,7 +134,6 @@ TASKBARICON::~TASKBARICON() {
 	this->Destroy();
 }
 
-
 BOOL
 TASKBARICON::Construct() {
 	NOTIFYICONDATAV5 nofv5 = NULLSTRUCT;
@@ -207,7 +204,6 @@ TASKBARICON::HasExtendedFeatures(void) {
 	return this->osVersion >= 5;  //maybee we want to implement version 6 from up vista
 }
 
-
 BOOL
 TASKBARICON::RebuildIfNecessary(BOOL force) {
 	char tt[256];
@@ -221,7 +217,6 @@ TASKBARICON::RebuildIfNecessary(BOOL force) {
 
 	return this->SetTooltip(tt);
 }
-
 
 int
 TASKBARICON::SetIcon(int iconid) {
@@ -260,10 +255,8 @@ int
 TASKBARICON::SetTooltip(const char* tooltip) {
 	BOOL ok = 0;
 
-
 	if (strcmp(this->Tooltip, tooltip) != 0) {
 		strcpy_s(this->Tooltip, sizeof(Tooltip), tooltip);
-
 
 		NOTIFYICONDATA nof = NULLSTRUCT;
 
@@ -272,7 +265,6 @@ TASKBARICON::SetTooltip(const char* tooltip) {
 		nof.uID = this->Id;
 		nof.uFlags = NIF_TIP;
 		lstrcpyn(nof.szTip, this->Tooltip, sizeof(nof.szTip) - 1);
-
 
 		ok = ::Shell_NotifyIcon(NIM_MODIFY, &nof);
 
@@ -286,10 +278,9 @@ TASKBARICON::SetTooltip(const char* tooltip) {
 	return ok;
 }
 
-
 int
 TASKBARICON::SetBalloon(ULONG flags, const char* title, const char* text, int timeout) {
-	BOOL ok;
+	BOOL ok = 0;
 
 	NOTIFYICONDATA nof = NULLSTRUCT;
 
@@ -302,22 +293,15 @@ TASKBARICON::SetBalloon(ULONG flags, const char* title, const char* text, int ti
 	lstrcpyn(nof.szInfo, text, sizeof(nof.szInfo) - 1);
 	lstrcpyn(nof.szInfoTitle, title, sizeof(nof.szInfoTitle) - 1);
 
-	return Shell_NotifyIcon(NIM_MODIFY, &nof);
+	ok = ::Shell_NotifyIcon(NIM_MODIFY, &nof);
 
 	// try to rebuild if SetBalloon failed
-
 	if (!ok)
 
 		this->RebuildIfNecessary(TRUE);
 
 	return ok;
 }
-
-
-
-
-
-
 
 //////////////////////////////////////////////////////////////////////////////
 //                                                                          // 
@@ -348,7 +332,6 @@ MENU::MENU(int id, HINSTANCE hdll)
 	IsLoaded(TRUE) {
 
 }
-
 
 void
 MENU::EnableMenuItem(int id, int status) {
@@ -413,7 +396,6 @@ MENU::GetNumMenuItems() {
 	return ::GetMenuItemCount(*this);
 }
 
-
 //--------------------------------------------------------------------
 //  return the sub-menu handle of a menu item at a given position
 //--------------------------------------------------------------------
@@ -425,7 +407,6 @@ MENU::GetSubmenuFromPos(int pos) {
 
 	return rc;
 }
-
 
 //--------------------------------------------------------------------
 //  return the item pos of a menu entry (search by id)
@@ -446,7 +427,6 @@ MENU::GetMenuPosFromID(int id) {
 
 	return rc;
 }
-
 
 //-------------------------------------------------------------------------
 //  
@@ -470,7 +450,6 @@ MENU::InsertItem(const char* text, int id, int pos) {
 	return ::InsertMenuItem(*this, pos, TRUE, &mi);
 }
 
-
 //-------------------------------------------------------------------------
 //  
 //-------------------------------------------------------------------------
@@ -492,7 +471,6 @@ MENU::Popup(HWND hwndowner, POINT* ppoint, BOOL synchtrack) {
 
 	if (hwndowner)
 		::SetForegroundWindow(hwndowner);
-
 
 	ULONG flags = TPM_LEFTALIGN | TPM_LEFTBUTTON;
 
