@@ -1386,9 +1386,8 @@ FANCONTROL::DlgProc(HWND
 		break;
 
 	case WM_ENDSESSION:  //WM_QUERYENDSESSION?
-		//if running as service do not end
 		if (!this->Runs_as_service) {
-			// end program
+			// End program
 			// Wait for the work thread to terminate
 			if (this->hThread) {
 				::WaitForSingleObject(this->hThread, INFINITE);
@@ -1421,7 +1420,7 @@ FANCONTROL::DlgProc(HWND
 		}
 		break;
 
-		//		case WM_MOVE:
+//	case WM_MOVE:
 	case WM_SIZE:
 		if (mp1 == SIZE_MINIMIZED && this->MinimizeToSysTray) {
 			::ShowWindow(this->hwndDialog, FALSE);
