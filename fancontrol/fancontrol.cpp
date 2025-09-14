@@ -1386,7 +1386,7 @@ FANCONTROL::DlgProc(HWND
 		break;
 
 	case WM_ENDSESSION:  //WM_QUERYENDSESSION?
-	//if running as service do not end
+		//if running as service do not end
 		if (!this->Runs_as_service) {
 			// end program
 			// Wait for the work thread to terminate
