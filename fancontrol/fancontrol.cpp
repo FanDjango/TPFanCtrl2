@@ -69,8 +69,9 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	ManModeExitInternal(80),
 	ShowBiasedTemps(0),
 	SecWinUptime(0),
-	SlimDialog(0),
 	SecStartDelay(0),
+	lidClosedMode(0),
+	SlimDialog(0),
 	Log2File(0),
 	StayOnTop(0),
 	Log2csv(0),
@@ -1364,13 +1365,18 @@ FANCONTROL::DlgProc(HWND
 				BYTE state = *(BYTE*)(&pbs->Data);
 				if (state == 0) {  // Lid closed
 					this->isLidClosed = true;
-					this->Trace("Lid closed detected, will switch to BIOS mode.");
-					this->previousModeBeforeLidClose = this->CurrentMode;
-					this->ModeToDialog(1);
-					ok = this->SetFan("Lid close, Switch to BIOS Mode", 0x80);
-					if (ok) {
-						this->Trace("Set to BIOS Mode due to lid close");
-						::Sleep(1000);
+					if (this->lidClosedMode == 0) {
+						this->Trace("Lid closed detected, will switch to BIOS mode.");
+						this->previousModeBeforeLidClose = this->CurrentMode;
+						this->ModeToDialog(1);
+						ok = this->SetFan("Lid close, Switch to BIOS Mode", 0x80);
+						if (ok) {
+							this->Trace("Set to BIOS Mode due to lid close");
+							::Sleep(1000);
+						}
+					}
+					else {
+						this->Trace("Lid closed detected, continuing normal operation.");
 					}
 				}
 				else { // Lid opened

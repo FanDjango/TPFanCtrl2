@@ -291,6 +291,11 @@ FANCONTROL::ReadConfig(const char* configfile)
 				continue;
 			}
 
+			if (_strnicmp(buf, "LidClosedMode=", 14) == 0) {
+				this->lidClosedMode = atoi(buf + 14);
+				continue;
+			}
+
 			if (_strnicmp(buf, "Log2File=", 9) == 0) {
 				this->Log2File = atoi(buf + 9);
 				continue;

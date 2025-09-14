@@ -89,6 +89,7 @@ protected:
 	struct SENSOROFFSET {
 		int offs, hystMin, hystMax; // min and max temp values that offs takes effect. -1 to disable
 	} SensorOffset[16];
+
 	int LastSmartLevel = -1;
 	int IconLevels[3];    // temp levels for coloring the icon
 	int FIconLevels[3];    // fahrenheit temp levels for coloring the icon
@@ -125,6 +126,8 @@ protected:
 	int ReadErrorCount;
 	int MaxReadErrors;
 	int SecWinUptime;
+	int SecStartDelay;
+	int lidClosedMode;
 	int SlimDialog;
 	int NoBallons,
 		HK_BIOS_Method,
@@ -150,7 +153,6 @@ protected:
 	int ManModeExit;
 	int ManModeExitInternal;
 	int ShowBiasedTemps;
-	int SecStartDelay;
 	char gSensorNames[17][4];
 	int Log2File;
 	int Log2csv;
