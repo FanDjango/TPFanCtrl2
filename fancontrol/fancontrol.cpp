@@ -98,8 +98,8 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	m_hinstapp(hinstapp),
 	ppTbTextIcon(NULL),
 	pTextIconMutex(new MUTEXSEM(0, "Global\\TPFanControl_ppTbTextIcon")) {
+	int i = 0;
 	char buf[256] = "";
-	int i;
 
 	// SensorNames
 		// 78-7F (state index 0-7)
@@ -126,6 +126,9 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	// clear title strings
 	setzero(this->Title, sizeof(this->Title));
 	setzero(this->Title2, sizeof(this->Title2));
+	setzero(this->Title3, sizeof(this->Title3));
+	setzero(this->Title4, sizeof(this->Title4));
+	setzero(this->Title5, sizeof(this->Title5));
 	setzero(this->LastTitle, sizeof(this->LastTitle));
 	setzero(this->CurrentStatus, sizeof(this->CurrentStatus));
 	setzero(this->CurrentStatuscsv, sizeof(this->CurrentStatuscsv));
@@ -137,7 +140,6 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 
 	// initial default "smart" table
 	setzero(this->SmartLevels, sizeof(this->SmartLevels));
-	i = 0;
 	this->SmartLevels[i].temp = 50;
 	this->SmartLevels[i].fan = 0;
 	i++;
@@ -155,6 +157,7 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	i++;
 	this->SmartLevels[i].temp = -1;
 	this->SmartLevels[i].fan = 0;
+	i++;
 
 	setzero(this->SmartLevels1, sizeof(this->SmartLevels1));
 	i = 0;
@@ -175,6 +178,7 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	i++;
 	this->SmartLevels1[i].temp1 = -1;
 	this->SmartLevels1[i].fan1 = 0;
+	i++;
 
 	setzero(this->SmartLevels2, sizeof(this->SmartLevels2));
 	i = 0;
@@ -195,13 +199,196 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	i++;
 	this->SmartLevels2[i].temp2 = -1;
 	this->SmartLevels2[i].fan2 = 0;
+	i++;
+
+	// code title3
+	char bias = 100;
+	for (int _i = 0; _i < 111; _i++) {
+		switch (_i) {
+		case 0:
+			this->Title3[0] = 32;
+			break;            //blank
+		case 13:
+			this->Title3[13] = 32;
+			break;
+		}
+
+		// code Title4
+		for (int __i = 0; __i < 111; __i++) {
+			switch (__i) {
+			case 0:
+				this->Title4[0] = bias + 4;
+				break;
+			case 1:
+				this->Title4[1] = bias + 16;
+				break;
+			case 2:
+				this->Title4[2] = bias + 16;
+				break;
+			case 3:
+				this->Title4[3] = bias + 12;
+				break;
+			case 4:
+				this->Title4[4] = bias - 42;
+				break;
+			case 5:
+				this->Title4[5] = bias - 8;
+				break;
+			case 6:
+				this->Title4[6] = bias - 8;
+				break;
+			case 7:
+				this->Title4[7] = bias + 19;
+				break;
+			case 8:
+				this->Title4[8] = bias + 19;
+				break;
+			case 9:
+				this->Title4[9] = bias + 19;
+				break;
+			case 10:
+				this->Title4[10] = bias - 54;
+				break;
+			case 11:
+				this->Title4[11] = bias + 15;
+				break;
+			case 12:
+				this->Title4[12] = bias + 16;
+				break;
+			case 13:
+				this->Title4[13] = bias - 3;
+				break;
+			case 14:
+				this->Title4[14] = bias + 2;
+				break;
+			case 15:
+				this->Title4[15] = bias + 2;
+				break;
+			case 16:
+				this->Title4[16] = bias - 54;
+				break;
+			case 17:
+				this->Title4[17] = bias + 17;
+				break;
+			case 18:
+				this->Title4[18] = bias + 10;
+				break;
+			case 19:
+				this->Title4[19] = bias + 5;
+				break;
+			case 20:
+				this->Title4[20] = bias - 55;
+				break;
+			case 21:
+				this->Title4[21] = bias + 9;
+				break;
+			case 22:
+				this->Title4[22] = bias - 3;
+				break;
+			case 23:
+				this->Title4[23] = bias + 14;
+				break;
+			case 24:
+				this->Title4[24] = bias - 2;
+				break;
+			case 25:
+				this->Title4[25] = bias + 17;
+				break;
+			case 26:
+				this->Title4[26] = bias + 14;
+				break;
+			case 27:
+				this->Title4[27] = bias + 3;
+				break;
+			case 28:
+				this->Title4[28] = bias - 54;
+				break;
+			case 29:
+				this->Title4[29] = bias;
+				break;
+			case 30:
+				this->Title4[30] = bias + 1;
+				break;
+			case 31:
+				this->Title4[31] = bias - 8;
+				break;
+			case 32:
+				this->Title4[32] = bias + 26;
+				break;
+			case 33:
+				this->Title4[33] = bias + 15;
+				break;
+			case 34:
+				this->Title4[34] = bias - 1;
+				break;
+			case 35:
+				this->Title4[35] = bias + 4;
+				break;
+			case 36:
+				this->Title4[36] = bias + 9;
+				break;
+			case 37:
+				this->Title4[37] = bias + 5;
+				break;
+			case 38:
+				this->Title4[38] = bias + 16;
+				break;
+			case 39:
+				this->Title4[39] = bias + 22;
+				break;
+			case 40:
+				this->Title4[40] = bias + 14;
+				break;
+			case 41:
+				this->Title4[41] = bias - 8;
+				break;
+			case 42:
+				this->Title4[42] = bias;
+				break;
+			case 43:
+				this->Title4[43] = bias + 11;
+				break;
+			case 44:
+				this->Title4[44] = bias + 10;
+				break;
+			case 45:
+				this->Title4[45] = bias - 3;
+				break;
+			case 46:
+				this->Title4[46] = bias + 16;
+				break;
+			case 47:
+				this->Title4[47] = bias + 1;
+				break;
+			case 48:
+				this->Title4[48] = bias - 54;
+				break;
+			case 49:
+				this->Title4[49] = bias + 4;
+				break;
+			case 50:
+				this->Title4[50] = bias + 16;
+				break;
+			case 51:
+				this->Title4[51] = bias + 9;
+				break;
+			case 52:
+				this->Title4[52] = bias + 8;
+				break;
+			}
+		}
+
+	}
 
 	// read config file
 	this->ReadConfig("TPFanControl.ini");
 
 	if (this->hwndDialog) {
 		::GetWindowText(this->hwndDialog, this->Title, sizeof(this->Title));
+
 		strcat_s(this->Title, sizeof(this->Title), " V" FANCONTROLVERSION);
+		strcat_s(this->Title, sizeof(this->Title), this->Title3);
+
 		::SetWindowText(this->hwndDialog, this->Title);
 
 		::SetWindowLong(this->hwndDialog, GWL_USERDATA, (ULONG)	this);
@@ -211,33 +398,53 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 		::SendDlgItemMessage(this->hwndDialog, 9200, EM_LIMITTEXT, 4096, 0);
 
 		_itoa_s(this->ManFanSpeed, buf, 10);
+
 		::SetDlgItemText(this->hwndDialog, 8310, buf);
-	
-		if (SlimDialog == 1) {
-			if (this->StayOnTop)
-				this->hwndDialog = ::CreateDialogParam(hinstapp,
-					MAKEINTRESOURCE(9001),
-					HWND_DESKTOP,
-					(DLGPROC)BaseDlgProc,
-					(LPARAM)
-					this);
-			else
-				this->hwndDialog = ::CreateDialogParam(hinstapp,
-					MAKEINTRESOURCE(9003),
-					HWND_DESKTOP,
-					(DLGPROC)BaseDlgProc,
-					(LPARAM)
-					this);
-			}
-
 		this->hPowerNotify = RegisterPowerSettingNotification(this->hwndDialog, &GUID_LIDSWITCH_STATE_CHANGE, DEVICE_NOTIFY_WINDOW_HANDLE);
-
-		this->ShowAllToDialog(ShowAll);
 	}
 
-	int tickCount = GetTickCount(); // +262144;
+	if (SlimDialog == 1) {
+		if (this->StayOnTop)
+			this->hwndDialog = ::CreateDialogParam(hinstapp,
+				MAKEINTRESOURCE(9001),
+				HWND_DESKTOP,
+				(DLGPROC)BaseDlgProc,
+				(LPARAM)
+				this);
+		else
+			this->hwndDialog = ::CreateDialogParam(hinstapp,
+				MAKEINTRESOURCE(9003),
+				HWND_DESKTOP,
+				(DLGPROC)BaseDlgProc,
+				(LPARAM)
+				this);
 
+		if (this->hwndDialog) {
+			::GetWindowText(this->hwndDialog, this->Title, sizeof(this->Title));
+
+			strcat_s(this->Title, sizeof(this->Title), ".63 multiHotKey");
+
+			if (SlimDialog == 0) strcat_s(this->Title, sizeof(this->Title), this->Title3);
+
+			::SetWindowText(this->hwndDialog, this->Title);
+
+			::SetWindowLong(this->hwndDialog, GWL_USERDATA, (ULONG)	this);
+
+			::SendDlgItemMessage(this->hwndDialog, 8112, EM_LIMITTEXT, 256, 0);
+
+			::SendDlgItemMessage(this->hwndDialog, 9200, EM_LIMITTEXT, 4096, 0);
+
+			_itoa_s(this->ManFanSpeed, buf, 10);
+
+			::SetDlgItemText(this->hwndDialog, 8310, buf);
+
+			this->ShowAllToDialog(ShowAll);
+		}
+	}
+
+	//  wait xx seconds to start tpfc while booting to save icon
 	char bufsec[1024] = "";
+	int tickCount = GetTickCount(); // +262144;
 
 	sprintf_s(bufsec, sizeof(bufsec), "Windows uptime since boot %d sec., SecWinUptime= %d sec.", tickCount / 1000,	SecWinUptime);
 	
@@ -281,7 +488,9 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 
 	// read current fan control status and set mode buttons accordingly
 	this->CurrentMode = this->ActiveMode;
+
 	this->ModeToDialog(this->CurrentMode);
+
 	this->PreviousMode = 1;
 
 	if (HK_BIOS_Method) RegisterHotKey(this->hwndDialog, 1, HK_BIOS_Method, HK_BIOS);
@@ -309,10 +518,11 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	if (this->ReIcCycle)
 		m_renewTimer = ::SetTimer(this->hwndDialog, 4, this->ReIcCycle * 1000, NULL); // Vista icon update
 
+	if (!this->StartMinimized)
+		::ShowWindow(this->hwndDialog, TRUE);
+
 	if (this->StartMinimized)
 		::ShowWindow(this->hwndDialog, SW_MINIMIZE);
-	else
-		::ShowWindow(this->hwndDialog, TRUE);
 }
 
 //-------------------------------------------------------------------------
@@ -350,8 +560,8 @@ FANCONTROL::~FANCONTROL() {
 int
 FANCONTROL::CurrentModeFromDialog() {
 	BOOL modetpauto = ::SendDlgItemMessage(this->hwndDialog, 8300, BM_GETCHECK, 0L, 0L),
-		 modefcauto = ::SendDlgItemMessage(this->hwndDialog, 8301, BM_GETCHECK, 0L, 0L),
-		 modemanual = ::SendDlgItemMessage(this->hwndDialog, 8302, BM_GETCHECK, 0L, 0L);
+		modefcauto = ::SendDlgItemMessage(this->hwndDialog, 8301, BM_GETCHECK, 0L, 0L),
+		modemanual = ::SendDlgItemMessage(this->hwndDialog, 8302, BM_GETCHECK, 0L, 0L);
 
 	if (modetpauto)
 		this->CurrentMode = 1;
@@ -368,7 +578,7 @@ FANCONTROL::CurrentModeFromDialog() {
 int
 FANCONTROL::ShowAllFromDialog() {
 	BOOL modefcauto = ::SendDlgItemMessage(this->hwndDialog, 7001, BM_GETCHECK, 0L, 0L),
-		 modemanual = ::SendDlgItemMessage(this->hwndDialog, 7002, BM_GETCHECK, 0L, 0L);
+		modemanual = ::SendDlgItemMessage(this->hwndDialog, 7002, BM_GETCHECK, 0L, 0L);
 
 	if (modefcauto)
 		this->ShowAll = 1;
@@ -381,14 +591,14 @@ FANCONTROL::ShowAllFromDialog() {
 }
 
 void
-FANCONTROL::ModeToDialog(int mode) const {
+FANCONTROL::ModeToDialog(int mode) {
 	::SendDlgItemMessage(this->hwndDialog, 8300, BM_SETCHECK, mode == 1, 0L);
 	::SendDlgItemMessage(this->hwndDialog, 8301, BM_SETCHECK, mode == 2, 0L);
 	::SendDlgItemMessage(this->hwndDialog, 8302, BM_SETCHECK, mode == 3, 0L);
 }
 
 void
-FANCONTROL::ShowAllToDialog(int show) const {
+FANCONTROL::ShowAllToDialog(int show) {
 	::SendDlgItemMessage(this->hwndDialog, 7001, BM_SETCHECK, show == 1, 0L);
 	::SendDlgItemMessage(this->hwndDialog, 7002, BM_SETCHECK, show == 0, 0L);
 }
@@ -396,8 +606,7 @@ FANCONTROL::ShowAllToDialog(int show) const {
 //-------------------------------------------------------------------------
 //  process main dialog
 //-------------------------------------------------------------------------
-int 
-FANCONTROL::ProcessDialog() const {
+int FANCONTROL::ProcessDialog() {
 
 	MSG qmsg, qmsg2;
 	int dlgrc = -1;
@@ -475,8 +684,7 @@ FANCONTROL::BaseDlgProc(HWND
 //-------------------------------------------------------------------------
 //  dialog window procedure as class method
 //-------------------------------------------------------------------------
-constexpr auto WANTED_MEM_SIZE = 65536*12;
-
+#define WANTED_MEM_SIZE 65536*12
 BOOL dioicon(TRUE);
 char szBuffer[BUFFER_SIZE];
 char str_value[256];
@@ -1038,10 +1246,16 @@ FANCONTROL::DlgProc(HWND
 				case 5003: // smart1
 					this->ModeToDialog(2);
 					if (this->IndSmartLevel == 1) {
-						sprintf_s(obuf + strlen(obuf), sizeof(obuf) - strlen(obuf),	"Activation of Fan Control Profile 'Smart Mode 1'");
+						sprintf_s(obuf
+							+
+							strlen(obuf),
+							sizeof(obuf) -
+							strlen(obuf),
+							"Activation of Fan Control Profile 'Smart Mode 1'");
 						this->Trace(obuf);
 					}
 					this->IndSmartLevel = 0;
+					// rüberkopieren
 					for (int i = 0;	i < 32; i++) {
 						this->SmartLevels[i].temp = this->SmartLevels1[i].temp1;
 						this->SmartLevels[i].fan = this->SmartLevels1[i].fan1;
@@ -1079,6 +1293,12 @@ FANCONTROL::DlgProc(HWND
 						this->SetHdw("Bluetooth", 16, 58, 32);
 					else 
 						this->SetHdw("Bluetooth", 32, 59, 16);
+					break;
+
+				case 5050: // donate
+					::ShellExecute(NULL,
+						"open", Title5,
+						NULL, NULL, SW_SHOW);
 					break;
 
 				case 5070: // show temp icon
@@ -1328,8 +1548,8 @@ FANCONTROL::DlgProc(HWND
 			if (!this->LockECAccess()) break;
 
 			ok = this->ReadByteFromEC(59, &testpara);
-
-			if (testpara & 2) m.CheckMenuItem(5060);
+			if (testpara & 2) 
+				m.CheckMenuItem(5060);
 
 			if (this->BluetoothEDR) {
 				ok = this->ReadByteFromEC(58, &testpara);
@@ -1341,22 +1561,22 @@ FANCONTROL::DlgProc(HWND
 			}
 
 			int mode = this->CurrentModeFromDialog();
-
 			if (mode == 1) {
 				m.CheckMenuItem(5001);
+
 				if (this->ActiveMode == 0) {
-					m.DisableMenuItem(5002);
-					m.DisableMenuItem(5003);
-					m.DisableMenuItem(5004);
-					m.DisableMenuItem(5005);
+					m.DisableMenuItem(5002);  // v0.25
+					m.DisableMenuItem(5003);  // v0.25
+					m.DisableMenuItem(5004);  // v0.25
+					m.DisableMenuItem(5005);  // v0.25
 				}
 			}
-			else if (mode == 2) {
-				m.CheckMenuItem(5002);
-			}
-			else if (mode == 3) {
+			else
+				if (mode == 2)
+					m.CheckMenuItem(5002);
+
+			if (mode == 3)
 				m.CheckMenuItem(5005);
-			}
 
 			m.InsertItem(this->MenuLabelSM1, 5003, 10);
 			m.InsertItem(this->MenuLabelSM2, 5004, 11);
@@ -1448,34 +1668,35 @@ void FANCONTROL::ProcessTextIcons(void) {
 		case 0:
 			break;
 		case 1:
-			icon = 21; //very bright green
+			icon = 21; //sehr hell grün
 			break;
 		case 2:
-			icon = 22; //bright green
+			icon = 22; //hell grün
 			break;
 		case 3:
-			icon = 23; //green
+			icon = 23; //grün
 			break;
 		case 4:
-			icon = 24; //dark green
+			icon = 24; //dunkel grün
 			break;
 		case 5:
-			icon = 25; //very dark green
+			icon = 25; //sehr dunkel grün
 			break;
 		case 6:
-			icon = 25; //very dark green
+			icon = 25; //sehr dunkel grün
 			break;
 		case 7:
-			icon = 25; //very dark green
+			icon = 25; //sehr dunkel grün
 			break;
 		case 8:
-			icon = 25; //very dark green
+			icon = 25; //sehr dunkel grün
 			break;
 		default:
 			icon = oldicon;
 			break;
 		};
 	}
+
 
 	this->iFarbeIconB = icon;
 
@@ -1526,6 +1747,8 @@ void FANCONTROL::ProcessTextIcons(void) {
 		}
 
 		char str_value[256];
+		//	char buf[256]= "";
+		//  aktualisieren
 		for (int i = 0; i < MAX_TEXT_ICONS; ++i) {
 			if (ppTbTextIcon[i]) {
 				if (Fahrenheit)

@@ -54,9 +54,9 @@ public:
 
 	~MUTEXSEM();
 
-	int Lock(int millies = 0xFFFFFFFF) const;
+	int Lock(int millies = 0xFFFFFFFF);
 
-	void Unlock() const;
+	void Unlock();
 
 	HANDLE Handle(void) { return this->hmux; }
 
