@@ -37,13 +37,12 @@
 #define ARRAYMAX(tab) (sizeof(tab)/sizeof((tab)[0]))
 #define NULLSTRUCT    { 0, }
 
-//begin named pipe TPFanControl01
-#define g_szPipeName "\\\\.\\Pipe\\TPFanControl01"  //Name given to the pipe
+//Begin named pipe TPFanControl01
 //Pipe name format - \\.\pipe\pipename
-
+#define g_szPipeName "\\\\.\\Pipe\\TPFanControl01"  //Name given to the pipe
 #define BUFFER_SIZE 1024 //1k
 #define ACK_MESG_RECV "Message received successfully"
-//end named pipe TPFanControl01
+//End named pipe TPFanControl01
 
 class FANCONTROL {
 protected:
@@ -179,9 +178,6 @@ protected:
 
 	char Title[128];
 	char Title2[128];
-	char Title3[128];
-	char Title4[128];
-	char Title5[128];
 	char LastTitle[128];
 	char LastTooltip[128];
 	char CurrentStatus[256];
@@ -192,9 +188,9 @@ protected:
 
 	int ShowAllFromDialog();
 
-	void ModeToDialog(int mode);
+	void ModeToDialog(int mode) const;
 
-	void ShowAllToDialog(int mode);
+	void ShowAllToDialog(int mode) const;
 
 	ULONG DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2);
 
@@ -275,11 +271,11 @@ public:
 
 	~FANCONTROL();
 
-	int ProcessDialog();
+	int ProcessDialog() const;
 
-	HWND GetDialogWnd() { return hwndDialog; }
+	HWND GetDialogWnd() const { return hwndDialog; }
 
-	HANDLE GetWorkThread() { return hThread; }
+	HANDLE GetWorkThread() const { return hThread; }
 
 	// The texticons will be shown depending on variables
 	void ProcessTextIcons(void);

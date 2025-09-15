@@ -49,7 +49,7 @@ MUTEXSEM::~MUTEXSEM() {
 }
 
 int
-MUTEXSEM::Lock(int millies) {
+MUTEXSEM::Lock(int millies) const {
 	int ok = FALSE;
 
 	int rc = this->hmux ? ::WaitForSingleObject(this->hmux, millies) : WAIT_FAILED;
@@ -59,7 +59,7 @@ MUTEXSEM::Lock(int millies) {
 }
 
 void
-MUTEXSEM::Unlock() {
+MUTEXSEM::Unlock() const {
 	int ok = ::ReleaseMutex(this->hmux);
 }
 
