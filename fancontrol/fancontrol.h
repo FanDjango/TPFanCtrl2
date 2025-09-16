@@ -127,7 +127,7 @@ protected:
 	int MaxReadErrors;
 	int SecWinUptime;
 	int SecStartDelay;
-	int lidClosedMode = 1;
+	int LidClosedMode = 1;
 	int SlimDialog;
 	int NoBallons,
 		HK_BIOS_Method,

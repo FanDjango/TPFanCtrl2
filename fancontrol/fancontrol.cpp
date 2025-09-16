@@ -70,7 +70,7 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	ShowBiasedTemps(0),
 	SecWinUptime(0),
 	SecStartDelay(0),
-	lidClosedMode(1), // 1 BIOS, 2 Auto
+	LidClosedMode(1), // 1 BIOS, 2 Auto
 	SlimDialog(0),
 	Log2File(0),
 	StayOnTop(0),
@@ -1087,28 +1087,31 @@ FANCONTROL::DlgProc(HWND
 					BYTE state = *(BYTE*)(&pbs->Data);
 					if (state == 0) {  // Lid closed
 						this->isLidClosed = true;
-						if (this->lidClosedMode == 1) {
-							this->Trace("Lid closed detected, will switch to BIOS mode.");
-							this->previousModeBeforeLidClose = this->CurrentMode;
+						this->previousModeBeforeLidClose = this->CurrentMode;
+						this->Trace("Lid close detected");
+						if (this->LidClosedMode == 0) {
+							this->ModeToDialog(3);
+							ok = this->SetFan("Switched to manual mode and turned fans off", 0x00);
+							if (ok)	::Sleep(1000);
+						}
+						else if (this->LidClosedMode == 1) {
 							this->ModeToDialog(1);
-							ok = this->SetFan("Lid close, Switch to BIOS Mode", 0x80);
-							if (ok) {
-								this->Trace("Set to BIOS Mode due to lid close");
-								::Sleep(1000);
-							}
+							ok = this->SetFan("Switched to BIOS mode", 0x80);
+							if (ok)	::Sleep(1000);
 						}
 						else {
-							this->previousModeBeforeLidClose = this->CurrentMode;
-							this->Trace("Lid closed detected but continuing operation.");
+							this->Trace("Continuing operation with lid closed");
 						}
 					}
 					else { // Lid opened
 						if (this->isLidClosed) {
-							this->Trace("Lid opened detected, will switch to previous mode.");
-							this->ModeToDialog(this->previousModeBeforeLidClose);
-							this->Trace("Set to previous Mode due to lid open");
-						}
+							this->Trace("Lid open detected");
+							if (this->previousModeBeforeLidClose != this->CurrentMode) {
+								this->ModeToDialog(this->previousModeBeforeLidClose);
+								this->Trace("Switched to previous mode");
+							}
 						this->isLidClosed = false;
+						}
 					}
 				}
 			}
