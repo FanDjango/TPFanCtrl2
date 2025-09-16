@@ -234,7 +234,12 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 		}
 	}
 
-	// decide if startup delay is needed/requested, perform startup delay
+	// Decide if startup delay is needed/requested, perform startup delay
+	// 
+	// If you need to use this feature, take note of the following caveat:
+	// If the windows fast start feature is turned on, the system uptime
+	// WILL NOT BE RESET ON REBOOT, thus making this logic fail. Turn it off
+	// make this work.
 	DWORD tickCount = GetTickCount();
 
 	char bufsec[1024] = "";
@@ -248,7 +253,7 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 
 		if (!NoWaitMessage) {
 			sprintf_s(bufsec, sizeof(bufsec),
-				"TPFanControl delayed by %d sec. after\nboot time (SecWinUptime= %d sec.)\n\nto prevent missing systray icons\nand communication errors between\nTPFanControl and embedded controller\n\n\nTo avoid this message box set\nNoWaitMessage=1 in TPFanControl.ini",
+				"TPFanControl delayed %d sec. after\nboot time (SecWinUptime= %d sec.)\n\nto prevent missing systray icons\nand communication errors between\nTPFanControl and embedded controller\n\n\nTo avoid this message box set\nNoWaitMessage=1 in TPFanControl.ini",
 				SecStartDelay, SecWinUptime);
 
 			// Don't show message box when as service in Vista
