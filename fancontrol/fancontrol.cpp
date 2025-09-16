@@ -405,10 +405,8 @@ int FANCONTROL::ProcessDialog() {
 
 			::GetMessage(&qmsg, NULL, 0L, 0L);
 
-			// control movements
-			if (qmsg.message != WM__DISMISSDLG && IsDialogMessage(this->hwndDialog, &qmsg)) {
+			if (qmsg.message != WM__DISMISSDLG && IsDialogMessage(this->hwndDialog, &qmsg))
 				continue;
-			}
 
 			qmsg2 = qmsg;
 			TranslateMessage(&qmsg);
@@ -446,16 +444,12 @@ FANCONTROL::BaseDlgProc(HWND
 
 	FANCONTROL* This = (FANCONTROL*)GetWindowLong(hwnd, GWL_USERDATA);
 
-	if (This)
-	{
-		if (msg == s_TaskbarCreated)
-		{
+	if (This) {
+		if (msg == s_TaskbarCreated) {
 			This->TaskbarNew = 1;
 
 			if (This->pTaskbarIcon)
-			{
 				This->pTaskbarIcon->RebuildIfNecessary(TRUE);
-			}
 			else {
 				This->RemoveTextIcons();
 				This->ProcessTextIcons();
@@ -499,505 +493,439 @@ FANCONTROL::DlgProc(HWND
 	//	HANDLE hLockS = CreateMutex(NULL,FALSE,"TPFanControlMutex01");
 
 	switch (msg) {
-	case WM_HOTKEY:
-		switch (mp1) {
+		case WM_HOTKEY:
+			switch (mp1) {
+				case 1:
+					this->ModeToDialog(1);
+					::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+					break;
 
-		case 1:
-			this->ModeToDialog(1);
-			::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-			break;
+				case 2:
+					this->ModeToDialog(2);
+					::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+					break;
 
-		case 2:
-			this->ModeToDialog(2);
-			::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-			break;
+				case 3:
+					this->ModeToDialog(3);
+					::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+					break;
 
-		case 3:
-			this->ModeToDialog(3);
-			::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-			break;
-
-		case 4:
-			this->ModeToDialog(2);
-			if (this->IndSmartLevel == 1) {
-				sprintf_s(obuf, sizeof(obuf), "Activation of Fan Control Profile 'Smart Mode 1'");
-				this->Trace(obuf);
-			}
-			this->IndSmartLevel = 0;
-
-			for (
-				int i = 0;
-				i < 32; i++) {
-				this->SmartLevels[i].temp = this->SmartLevels1[i].temp1;
-				this->SmartLevels[i].fan = this->SmartLevels1[i].fan1;
-			}
-			::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-			break;
-
-		case 5:
-			this->ModeToDialog(2);
-			if (this->IndSmartLevel == 0) {
-				sprintf_s(obuf, sizeof(obuf), "Activation of Fan Control Profile 'Smart Mode 2'");
-				this->Trace(obuf);
-			}
-			this->IndSmartLevel = 1;
-
-			for (
-				int i = 0;
-				i < 32; i++) {
-				this->SmartLevels[i].temp = this->SmartLevels2[i].temp2;
-				this->SmartLevels[i].fan = this->SmartLevels2[i].fan2;
-			}
-			::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-			break;
-
-		case 6:
-			if (this->CurrentMode > 1) {
-				this->ModeToDialog(1);
-				::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-			}
-
-			if (this->CurrentMode == 1) {
-				this->ModeToDialog(2);
-				::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-			}
-			break;
-
-		case 7:
-			if (this->CurrentMode > 1) {
-				this->ModeToDialog(1);
-				::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-			}
-			if (this->CurrentMode == 1) {
-				this->ModeToDialog(3);
-				::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-			}
-			break;
-
-		case 8:
-			if (this->CurrentMode < 3) {
-				this->ModeToDialog(3);
-				::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-			}
-			if (this->CurrentMode == 3) {
-				this->ModeToDialog(2);
-				::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-			}
-			break;
-
-		case 9:
-			this->ModeToDialog(2);
-			switch (IndSmartLevel) {
-			case 0:
-				sprintf_s(obuf, sizeof(obuf), "Activation of Fan Control Profile 'Smart Mode 2'");
-				this->
-					Trace(obuf);
-				this->
-					IndSmartLevel = 1;
-				for (
-					int i = 0;
-					i < 32; i++) {
-					this->SmartLevels[i].temp = this->SmartLevels2[i].temp2;
-					this->SmartLevels[i].fan = this->SmartLevels2[i].fan2;
-				}
-				::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-				break;
-			case 1:
-				sprintf_s(obuf,
-					sizeof(obuf), "Activation of Fan Control Profile 'Smart Mode 1'");
-				this->Trace(obuf);
-				this->IndSmartLevel = 0;
-				for (
-					int i = 0;
-					i < 32; i++) {
-					this->SmartLevels[i].temp = this->SmartLevels1[i].temp1;
-					this->SmartLevels[i].fan = this->SmartLevels1[i].fan1;
-				}
-				::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-				break;
-			}
-			break;
-		}
-
-	case WM_INITDIALOG:
-		// placing code here will NOT work!
-		// (put it into BaseDlgProc instead)
-		break;
-
-	case WM_TIMER:
-		switch (mp1)
-		{
-
-		case 1: // update fan state
-			::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-			if (this->Log2csv == 1)
-			{
-				this->Tracecsv(this->CurrentStatuscsv);
-			}
-			break;
-
-		case 2: // update window title
-			if (this->CurrentMode == 3 && this->MaxTemp > this->ManModeExitInternal) {
-				this->ModeToDialog(2);
-				::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-			}
-
-			res = this->IsMinimized();
-			if (res && strcmp(this->LastTitle, this->Title2) != 0)
-			{
-				strcpy_s(this->LastTitle, sizeof(this->LastTitle), this->Title2);
-			}
-			else
-				if (!res && strcmp(this->LastTitle, this->Title) != 0)
-				{
-					::SetWindowText(this->hwndDialog, this->Title);
-					strcpy_s(this->LastTitle, sizeof(this->LastTitle), this->Title);
-				}
-
-			if (this->pTaskbarIcon)
-			{
-				this->pTaskbarIcon->SetTooltip(this->Title2);
-				strcpy_s(this->LastTooltip, sizeof(this->LastTooltip), this->Title2);
-				int icon = -1;
-
-				if (this->CurrentModeFromDialog() == 1)
-				{
-					icon = 10;    // gray
-				}
-				else
-				{
-					icon = 11;    // blue
-					for (
-						int i = 0;
-						i < ARRAYMAX(this->IconLevels); i++)
-					{
-						if (this->MaxTemp >= this->IconLevels[i])
-						{
-							icon = 12 + i;    // yellow, orange, red
-						}
+				case 4:
+					this->ModeToDialog(2);
+					if (this->IndSmartLevel == 1) {
+						sprintf_s(obuf, sizeof(obuf), "Activation of Fan Control Profile 'Smart Mode 1'");
+						this->Trace(obuf);
 					}
-				}
+					this->IndSmartLevel = 0;
 
-				if (icon != this->CurrentIcon && icon != -1)
-				{
-					this->pTaskbarIcon->SetIcon(icon);
-					this->CurrentIcon = icon;
-					if (dioicon && !this->NoBallons) {
-						this->pTaskbarIcon->SetBalloon(NIIF_INFO, "TPFanControl old symbol icon",
-							"shows temperature level by color and state in tooltip, left click on icon shows or hides control window, right click shows menue",
-							11);
-						dioicon = FALSE;
+					for (int i = 0;	i < 32; i++) {
+						this->SmartLevels[i].temp = this->SmartLevels1[i].temp1;
+						this->SmartLevels[i].fan = this->SmartLevels1[i].fan1;
+					}
+					::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+					break;
+
+				case 5:
+					this->ModeToDialog(2);
+					if (this->IndSmartLevel == 0) {
+						sprintf_s(obuf, sizeof(obuf), "Activation of Fan Control Profile 'Smart Mode 2'");
+						this->Trace(obuf);
+					}
+					this->IndSmartLevel = 1;
+
+					for (int i = 0;	i < 32; i++) {
+						this->SmartLevels[i].temp = this->SmartLevels2[i].temp2;
+						this->SmartLevels[i].fan = this->SmartLevels2[i].fan2;
+					}
+					::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+					break;
+
+				case 6:
+					if (this->CurrentMode > 1) {
+						this->ModeToDialog(1);
+						::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+					}
+					else {
+						this->ModeToDialog(2);
+						::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+					}
+					break;
+
+				case 7:
+					if (this->CurrentMode > 1) {
+						this->ModeToDialog(1);
+						::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+					}
+					else {
+						this->ModeToDialog(3);
+						::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+					}
+					break;
+
+				case 8:
+					if (this->CurrentMode < 3) {
+						this->ModeToDialog(3);
+						::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+					}
+					else {
+						this->ModeToDialog(2);
+						::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+					}
+					break;
+
+				case 9:
+					this->ModeToDialog(2);
+					switch (IndSmartLevel) {
+						case 0:
+							sprintf_s(obuf, sizeof(obuf), "Activation of Fan Control Profile 'Smart Mode 2'");
+							this->Trace(obuf);
+							this->IndSmartLevel = 1;
+							for (int i = 0;	i < 32; i++) {
+								this->SmartLevels[i].temp = this->SmartLevels2[i].temp2;
+								this->SmartLevels[i].fan = this->SmartLevels2[i].fan2;
+							}
+							::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+							break;
+
+						case 1:
+							sprintf_s(obuf,
+								sizeof(obuf), "Activation of Fan Control Profile 'Smart Mode 1'");
+							this->Trace(obuf);
+							this->IndSmartLevel = 0;
+							for (int i = 0;	i < 32; i++) {
+								this->SmartLevels[i].temp = this->SmartLevels1[i].temp1;
+								this->SmartLevels[i].fan = this->SmartLevels1[i].fan1;
+							}
+							::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+							break;
+					}
+					break;
+			}
+			break;
+
+		case WM_INITDIALOG:
+			// placing code here will NOT work!
+			// (put it into BaseDlgProc instead)
+			break;
+
+		case WM_TIMER:
+			switch (mp1) {
+				case 1: // update fan state
+					::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+					if (this->Log2csv == 1)
+						this->Tracecsv(this->CurrentStatuscsv);
+					break;
+
+				case 2: // update window title
+					if (this->CurrentMode == 3 && this->MaxTemp > this->ManModeExitInternal) {
+						this->ModeToDialog(2);
+						::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
 					}
 
-				}
-				this->iFarbeIconB = icon;
-			}
-			break;
-
-		case 3: // update vista icon
-			//*************************************************************************************
-			//begin named pipe client session
-			//
-			if (bResult == FALSE && lbResult == TRUE)
-			{
-				_piscreated = FALSE;
-				lbResult = FALSE;
-				bResult = FALSE;
-				CloseHandle(hPipe0);
-				CloseHandle(hPipe1);
-				CloseHandle(hPipe2);
-				CloseHandle(hPipe3);
-				CloseHandle(hPipe4);
-				CloseHandle(hPipe5);
-				CloseHandle(hPipe6);
-				CloseHandle(hPipe7);
-			}
-
-			if (_piscreated == FALSE)
-			{
-				hPipe0 = CreateNamedPipe
-				(
-					g_szPipeName,             // pipe name
-					PIPE_ACCESS_OUTBOUND,     // write access
-					PIPE_TYPE_MESSAGE |       // message type pipe
-					PIPE_READMODE_MESSAGE |   // message-read mode
-					PIPE_NOWAIT,              // blocking mode
-					PIPE_UNLIMITED_INSTANCES, // max. instances
-					BUFFER_SIZE,              // output buffer size
-					BUFFER_SIZE,              // input buffer size
-					NMPWAIT_USE_DEFAULT_WAIT, // client time-out
-					NULL);                    // default security attribute
-				hPipe1 = CreateNamedPipe
-				(
-					g_szPipeName,             // pipe name
-					PIPE_ACCESS_OUTBOUND,     // write access
-					PIPE_TYPE_MESSAGE |       // message type pipe
-					PIPE_READMODE_MESSAGE |   // message-read mode
-					PIPE_NOWAIT,              // blocking mode
-					PIPE_UNLIMITED_INSTANCES, // max. instances
-					BUFFER_SIZE,              // output buffer size
-					BUFFER_SIZE,              // input buffer size
-					NMPWAIT_USE_DEFAULT_WAIT, // client time-out
-					NULL);                    // default security attribute
-				hPipe2 = CreateNamedPipe
-				(
-					g_szPipeName,             // pipe name
-					PIPE_ACCESS_OUTBOUND,     // write access
-					PIPE_TYPE_MESSAGE |       // message type pipe
-					PIPE_READMODE_MESSAGE |   // message-read mode
-					PIPE_NOWAIT,              // blocking mode
-					PIPE_UNLIMITED_INSTANCES, // max. instances
-					BUFFER_SIZE,              // output buffer size
-					BUFFER_SIZE,              // input buffer size
-					NMPWAIT_USE_DEFAULT_WAIT, // client time-out
-					NULL);                    // default security attribute
-				hPipe3 = CreateNamedPipe
-				(
-					g_szPipeName,             // pipe name
-					PIPE_ACCESS_OUTBOUND,     // write access
-					PIPE_TYPE_MESSAGE |       // message type pipe
-					PIPE_READMODE_MESSAGE |   // message-read mode
-					PIPE_NOWAIT,              // blocking mode
-					PIPE_UNLIMITED_INSTANCES, // max. instances
-					BUFFER_SIZE,              // output buffer size
-					BUFFER_SIZE,              // input buffer size
-					NMPWAIT_USE_DEFAULT_WAIT, // client time-out
-					NULL);                    // default security attribute
-				hPipe4 = CreateNamedPipe
-				(
-					g_szPipeName,             // pipe name
-					PIPE_ACCESS_OUTBOUND,     // write access
-					PIPE_TYPE_MESSAGE |       // message type pipe
-					PIPE_READMODE_MESSAGE |   // message-read mode
-					PIPE_NOWAIT,              // blocking mode
-					PIPE_UNLIMITED_INSTANCES, // max. instances
-					BUFFER_SIZE,              // output buffer size
-					BUFFER_SIZE,              // input buffer size
-					NMPWAIT_USE_DEFAULT_WAIT, // client time-out
-					NULL);                    // default security attribute
-				hPipe5 = CreateNamedPipe
-				(
-					g_szPipeName,             // pipe name
-					PIPE_ACCESS_OUTBOUND,     // write access
-					PIPE_TYPE_MESSAGE |       // message type pipe
-					PIPE_READMODE_MESSAGE |   // message-read mode
-					PIPE_NOWAIT,              // blocking mode
-					PIPE_UNLIMITED_INSTANCES, // max. instances
-					BUFFER_SIZE,              // output buffer size
-					BUFFER_SIZE,              // input buffer size
-					NMPWAIT_USE_DEFAULT_WAIT, // client time-out
-					NULL);                    // default security attribute
-				hPipe6 = CreateNamedPipe
-				(
-					g_szPipeName,             // pipe name
-					PIPE_ACCESS_OUTBOUND,     // write access
-					PIPE_TYPE_MESSAGE |       // message type pipe
-					PIPE_READMODE_MESSAGE |   // message-read mode
-					PIPE_NOWAIT,              // blocking mode
-					PIPE_UNLIMITED_INSTANCES, // max. instances
-					BUFFER_SIZE,              // output buffer size
-					BUFFER_SIZE,              // input buffer size
-					NMPWAIT_USE_DEFAULT_WAIT, // client time-out
-					NULL);                    // default security attribute
-				hPipe7 = CreateNamedPipe
-				(
-					g_szPipeName,             // pipe name
-					PIPE_ACCESS_OUTBOUND,     // write access
-					PIPE_TYPE_MESSAGE |       // message type pipe
-					PIPE_READMODE_MESSAGE |   // message-read mode
-					PIPE_NOWAIT,              // blocking mode
-					PIPE_UNLIMITED_INSTANCES, // max. instances
-					BUFFER_SIZE,              // output buffer size
-					BUFFER_SIZE,              // input buffer size
-					NMPWAIT_USE_DEFAULT_WAIT, // client time-out
-					NULL);                    // default security attribute
-
-				if (INVALID_HANDLE_VALUE == hPipe0) {
-					this->Trace("Creating Named Pipe client GUI was NOT successful.");
-					::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
-				}
-				if (INVALID_HANDLE_VALUE == hPipe1) {
-					this->Trace("Creating Named Pipe client GUI was NOT successful.");
-					::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
-				}
-				if (INVALID_HANDLE_VALUE == hPipe2) {
-					this->Trace("Creating Named Pipe client GUI was NOT successful.");
-					::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
-				}
-				if (INVALID_HANDLE_VALUE == hPipe3) {
-					this->Trace("Creating Named Pipe client GUI was NOT successful.");
-					::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
-				}
-				if (INVALID_HANDLE_VALUE == hPipe4) {
-					this->Trace("Creating Named Pipe client GUI was NOT successful.");
-					::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
-				}
-				if (INVALID_HANDLE_VALUE == hPipe5) {
-					this->Trace("Creating Named Pipe client GUI was NOT successful.");
-					::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
-				}
-				if (INVALID_HANDLE_VALUE == hPipe6) {
-					this->Trace("Creating Named Pipe client GUI was NOT successful.");
-					::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
-				}
-				if (INVALID_HANDLE_VALUE == hPipe7) {
-					this->Trace("Creating Named Pipe client GUI was NOT successful.");
-					::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
-				}
-
-				_piscreated = TRUE;
-			}
-
-			// fan speed
-			if (Fahrenheit) {
-				if (fan1speed > 0x1fff)
-					fan1speed = lastfan1speed;
-				sprintf_s(str_value,
-					sizeof(str_value), "%d %d %s %d %d %d ",
-					this->CurrentMode, (this->MaxTemp * 9 / 5 + 32), this->gSensorNames[iMaxTemp],
-					iFarbeIconB, fan1speed, fanctrl2);
-			}
-			else {
-				if (fan1speed > 0x1fff)
-					fan1speed = lastfan1speed;
-				sprintf_s(str_value,
-					sizeof(str_value), "%d %d %s %d %d %d ",
-					this->CurrentMode, (this->MaxTemp), this->gSensorNames[iMaxTemp],
-					iFarbeIconB, fan1speed, fanctrl2);
-			}
-			strcpy_s(szBuffer, str_value); //write buffer
-
-			//send to client
-			lbResult = bResult;
-			bResult = WriteFile
-			(
-				hPipe0,                // handle to pipe
-				szBuffer,             // buffer to write from
-				strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
-				&cbBytes,             // number of bytes written
-				NULL);                // not overlapped I/O
-			bResult = WriteFile
-			(
-				hPipe1,                // handle to pipe
-				szBuffer,             // buffer to write from
-				strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
-				&cbBytes,             // number of bytes written
-				NULL);                // not overlapped I/O
-			bResult = WriteFile
-			(
-				hPipe2,                // handle to pipe
-				szBuffer,             // buffer to write from
-				strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
-				&cbBytes,             // number of bytes written
-				NULL);                // not overlapped I/O
-			bResult = WriteFile
-			(
-				hPipe3,                // handle to pipe
-				szBuffer,             // buffer to write from
-				strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
-				&cbBytes,             // number of bytes written
-				NULL);                // not overlapped I/O
-			bResult = WriteFile
-			(
-				hPipe4,                // handle to pipe
-				szBuffer,             // buffer to write from
-				strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
-				&cbBytes,             // number of bytes written
-				NULL);                // not overlapped I/O
-			bResult = WriteFile
-			(
-				hPipe5,                // handle to pipe
-				szBuffer,             // buffer to write from
-				strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
-				&cbBytes,             // number of bytes written
-				NULL);                // not overlapped I/O
-			bResult = WriteFile
-			(
-				hPipe6,                // handle to pipe
-				szBuffer,             // buffer to write from
-				strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
-				&cbBytes,             // number of bytes written
-				NULL);                // not overlapped I/O
-			bResult = WriteFile
-			(
-				hPipe7,                // handle to pipe
-				szBuffer,             // buffer to write from
-				strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
-				&cbBytes,             // number of bytes written
-				NULL);                // not overlapped I/O
-
-			//end named pipe client session
-			//
-			//*************************************************************************************
-			break;
-
-		case 4: // renew tempicon
-			if (ShowTempIcon && ReIcCycle) {
-				this->RemoveTextIcons();
-				this->ProcessTextIcons();
-			}
-			break;
-
-		default:
-			break;
-		} // End switch mp1
-
-		if (this->ShowTempIcon == 1)
-		{
-			this->ProcessTextIcons();  //icon Einstieg
-		}
-		else {
-			this->RemoveTextIcons();
-		}
-
-		//	tell windows not to hold much more memspace
-		//	SetProcessWorkingSetSize(GetCurrentProcess(),65536,WANTED_MEM_SIZE);
-		break;
-
-	case WM_COMMAND:
-		if (
-			HIWORD(mp1) == BN_CLICKED || HIWORD(mp1) == EN_CHANGE)
-		{
-			int cmd = LOWORD(mp1);
-
-			//display temperature list
-
-			char obuf[256] = "", obuf2[128] = "", templist2[512];
-
-			strcpy_s(templist2, sizeof(templist2), "");
-
-			if (cmd == 7001 || cmd == 7002)
-			{
-				this->ShowAllFromDialog();
-
-				int i;
-				for (i = 0; i < 12; i++)
-				{
-					int temp = this->State.Sensors[i];
-
-					if (temp < 128 && temp != 0)
-					{
-						if (Fahrenheit)
-							sprintf_s(obuf2, sizeof(obuf2), "%d° F", temp * 9 / 5 + 32);
-						else
-							sprintf_s(obuf2, sizeof(obuf2), "%d° C", temp);
-
-						size_t strlen_templist2 = strlen_s(templist2, sizeof(templist2));
-
-						if (SlimDialog && StayOnTop)
-							sprintf_s(templist2 + strlen_templist2, sizeof(templist2) - strlen_templist2,
-								"%d %s %s (0x%02x)", i + 1, this->State.SensorName[i], obuf2, this->State.SensorAddr[i]);
-						else
-							sprintf_s(templist2 + strlen_templist2, sizeof(templist2) - strlen_templist2,
-								"%d %s %s", i + 1, this->State.SensorName[i], obuf2);
-
-						strcat_s(templist2, sizeof(templist2), "\r\n");
+					res = this->IsMinimized();
+					if (res && strcmp(this->LastTitle, this->Title2) != 0) {
+						strcpy_s(this->LastTitle, sizeof(this->LastTitle), this->Title2);
 					}
 					else
-					{
-						if (this->ShowAll == 1)
-						{
-							sprintf_s(obuf2, sizeof(obuf2), "n/a");
+						if (!res && strcmp(this->LastTitle, this->Title) != 0) {
+							::SetWindowText(this->hwndDialog, this->Title);
+							strcpy_s(this->LastTitle, sizeof(this->LastTitle), this->Title);
+						}
+
+					if (this->pTaskbarIcon)	{
+						this->pTaskbarIcon->SetTooltip(this->Title2);
+						strcpy_s(this->LastTooltip, sizeof(this->LastTooltip), this->Title2);
+						int icon = -1;
+
+						if (this->CurrentModeFromDialog() == 1)	{
+							icon = 10;    // gray
+						}
+						else {
+							icon = 11;    // blue
+							for (int i = 0;	i < ARRAYMAX(this->IconLevels); i++) {
+								if (this->MaxTemp >= this->IconLevels[i]) {
+									icon = 12 + i;    // yellow, orange, red
+								}
+							}
+						}
+
+						if (icon != this->CurrentIcon && icon != -1) {
+							this->pTaskbarIcon->SetIcon(icon);
+							this->CurrentIcon = icon;
+							if (dioicon && !this->NoBallons) {
+								this->pTaskbarIcon->SetBalloon(NIIF_INFO, "TPFanControl old symbol icon",
+									"shows temperature level by color and state in tooltip, left click on icon shows or hides control window, right click shows menue",
+									11);
+								dioicon = FALSE;
+							}
+
+						}
+						this->iFarbeIconB = icon;
+					}
+					break;
+
+				case 3: // update vista icon
+					//*************************************************************************************
+					//begin named pipe client session
+					//
+					if (bResult == FALSE && lbResult == TRUE) {
+						_piscreated = FALSE;
+						lbResult = FALSE;
+						bResult = FALSE;
+						CloseHandle(hPipe0);
+						CloseHandle(hPipe1);
+						CloseHandle(hPipe2);
+						CloseHandle(hPipe3);
+						CloseHandle(hPipe4);
+						CloseHandle(hPipe5);
+						CloseHandle(hPipe6);
+						CloseHandle(hPipe7);
+					}
+
+					if (_piscreated == FALSE) {
+						hPipe0 = CreateNamedPipe(
+							g_szPipeName,             // pipe name
+							PIPE_ACCESS_OUTBOUND,     // write access
+							PIPE_TYPE_MESSAGE |       // message type pipe
+							PIPE_READMODE_MESSAGE |   // message-read mode
+							PIPE_NOWAIT,              // blocking mode
+							PIPE_UNLIMITED_INSTANCES, // max. instances
+							BUFFER_SIZE,              // output buffer size
+							BUFFER_SIZE,              // input buffer size
+							NMPWAIT_USE_DEFAULT_WAIT, // client time-out
+							NULL);                    // default security attribute
+						hPipe1 = CreateNamedPipe(
+							g_szPipeName,             // pipe name
+							PIPE_ACCESS_OUTBOUND,     // write access
+							PIPE_TYPE_MESSAGE |       // message type pipe
+							PIPE_READMODE_MESSAGE |   // message-read mode
+							PIPE_NOWAIT,              // blocking mode
+							PIPE_UNLIMITED_INSTANCES, // max. instances
+							BUFFER_SIZE,              // output buffer size
+							BUFFER_SIZE,              // input buffer size
+							NMPWAIT_USE_DEFAULT_WAIT, // client time-out
+							NULL);                    // default security attribute
+						hPipe2 = CreateNamedPipe(
+							g_szPipeName,             // pipe name
+							PIPE_ACCESS_OUTBOUND,     // write access
+							PIPE_TYPE_MESSAGE |       // message type pipe
+							PIPE_READMODE_MESSAGE |   // message-read mode
+							PIPE_NOWAIT,              // blocking mode
+							PIPE_UNLIMITED_INSTANCES, // max. instances
+							BUFFER_SIZE,              // output buffer size
+							BUFFER_SIZE,              // input buffer size
+							NMPWAIT_USE_DEFAULT_WAIT, // client time-out
+							NULL);                    // default security attribute
+						hPipe3 = CreateNamedPipe(
+							g_szPipeName,             // pipe name
+							PIPE_ACCESS_OUTBOUND,     // write access
+							PIPE_TYPE_MESSAGE |       // message type pipe
+							PIPE_READMODE_MESSAGE |   // message-read mode
+							PIPE_NOWAIT,              // blocking mode
+							PIPE_UNLIMITED_INSTANCES, // max. instances
+							BUFFER_SIZE,              // output buffer size
+							BUFFER_SIZE,              // input buffer size
+							NMPWAIT_USE_DEFAULT_WAIT, // client time-out
+							NULL);                    // default security attribute
+						hPipe4 = CreateNamedPipe(
+							g_szPipeName,             // pipe name
+							PIPE_ACCESS_OUTBOUND,     // write access
+							PIPE_TYPE_MESSAGE |       // message type pipe
+							PIPE_READMODE_MESSAGE |   // message-read mode
+							PIPE_NOWAIT,              // blocking mode
+							PIPE_UNLIMITED_INSTANCES, // max. instances
+							BUFFER_SIZE,              // output buffer size
+							BUFFER_SIZE,              // input buffer size
+							NMPWAIT_USE_DEFAULT_WAIT, // client time-out
+							NULL);                    // default security attribute
+						hPipe5 = CreateNamedPipe(
+							g_szPipeName,             // pipe name
+							PIPE_ACCESS_OUTBOUND,     // write access
+							PIPE_TYPE_MESSAGE |       // message type pipe
+							PIPE_READMODE_MESSAGE |   // message-read mode
+							PIPE_NOWAIT,              // blocking mode
+							PIPE_UNLIMITED_INSTANCES, // max. instances
+							BUFFER_SIZE,              // output buffer size
+							BUFFER_SIZE,              // input buffer size
+							NMPWAIT_USE_DEFAULT_WAIT, // client time-out
+							NULL);                    // default security attribute
+						hPipe6 = CreateNamedPipe(
+							g_szPipeName,             // pipe name
+							PIPE_ACCESS_OUTBOUND,     // write access
+							PIPE_TYPE_MESSAGE |       // message type pipe
+							PIPE_READMODE_MESSAGE |   // message-read mode
+							PIPE_NOWAIT,              // blocking mode
+							PIPE_UNLIMITED_INSTANCES, // max. instances
+							BUFFER_SIZE,              // output buffer size
+							BUFFER_SIZE,              // input buffer size
+							NMPWAIT_USE_DEFAULT_WAIT, // client time-out
+							NULL);                    // default security attribute
+						hPipe7 = CreateNamedPipe(
+							g_szPipeName,             // pipe name
+							PIPE_ACCESS_OUTBOUND,     // write access
+							PIPE_TYPE_MESSAGE |       // message type pipe
+							PIPE_READMODE_MESSAGE |   // message-read mode
+							PIPE_NOWAIT,              // blocking mode
+							PIPE_UNLIMITED_INSTANCES, // max. instances
+							BUFFER_SIZE,              // output buffer size
+							BUFFER_SIZE,              // input buffer size
+							NMPWAIT_USE_DEFAULT_WAIT, // client time-out
+							NULL);                    // default security attribute
+
+						if (INVALID_HANDLE_VALUE == hPipe0) {
+							this->Trace("Creating Named Pipe 0 client GUI was NOT successful.");
+							::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
+						}
+						if (INVALID_HANDLE_VALUE == hPipe1) {
+							this->Trace("Creating Named Pipe 1 client GUI was NOT successful.");
+							::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
+						}
+						if (INVALID_HANDLE_VALUE == hPipe2) {
+							this->Trace("Creating Named Pipe 2 client GUI was NOT successful.");
+							::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
+						}
+						if (INVALID_HANDLE_VALUE == hPipe3) {
+							this->Trace("Creating Named Pipe 3 client GUI was NOT successful.");
+							::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
+						}
+						if (INVALID_HANDLE_VALUE == hPipe4) {
+							this->Trace("Creating Named Pipe 4 client GUI was NOT successful.");
+							::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
+						}
+						if (INVALID_HANDLE_VALUE == hPipe5) {
+							this->Trace("Creating Named Pipe 5 client GUI was NOT successful.");
+							::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
+						}
+						if (INVALID_HANDLE_VALUE == hPipe6) {
+							this->Trace("Creating Named Pipe 6 client GUI was NOT successful.");
+							::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
+						}
+						if (INVALID_HANDLE_VALUE == hPipe7) {
+							this->Trace("Creating Named Pipe 7 client GUI was NOT successful.");
+							::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
+						}
+
+						_piscreated = TRUE;
+					}
+
+					// fan speed
+					if (Fahrenheit) {
+						if (fan1speed > 0x1fff)
+							fan1speed = lastfan1speed;
+						sprintf_s(str_value,
+							sizeof(str_value), "%d %d %s %d %d %d ",
+							this->CurrentMode, (this->MaxTemp * 9 / 5 + 32), this->gSensorNames[iMaxTemp],
+							iFarbeIconB, fan1speed, fanctrl2);
+					}
+					else {
+						if (fan1speed > 0x1fff)
+							fan1speed = lastfan1speed;
+						sprintf_s(str_value,
+							sizeof(str_value), "%d %d %s %d %d %d ",
+							this->CurrentMode, (this->MaxTemp), this->gSensorNames[iMaxTemp],
+							iFarbeIconB, fan1speed, fanctrl2);
+					}
+					strcpy_s(szBuffer, str_value); //write buffer
+
+					//send to client
+					lbResult = bResult;
+					bResult = WriteFile(
+						hPipe0,                // handle to pipe
+						szBuffer,             // buffer to write from
+						strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
+						&cbBytes,             // number of bytes written
+						NULL);                // not overlapped I/O
+					bResult = WriteFile(
+						hPipe1,                // handle to pipe
+						szBuffer,             // buffer to write from
+						strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
+						&cbBytes,             // number of bytes written
+						NULL);                // not overlapped I/O
+					bResult = WriteFile(
+						hPipe2,                // handle to pipe
+						szBuffer,             // buffer to write from
+						strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
+						&cbBytes,             // number of bytes written
+						NULL);                // not overlapped I/O
+					bResult = WriteFile(
+						hPipe3,                // handle to pipe
+						szBuffer,             // buffer to write from
+						strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
+						&cbBytes,             // number of bytes written
+						NULL);                // not overlapped I/O
+					bResult = WriteFile(
+						hPipe4,                // handle to pipe
+						szBuffer,             // buffer to write from
+						strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
+						&cbBytes,             // number of bytes written
+						NULL);                // not overlapped I/O
+					bResult = WriteFile(
+						hPipe5,                // handle to pipe
+						szBuffer,             // buffer to write from
+						strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
+						&cbBytes,             // number of bytes written
+						NULL);                // not overlapped I/O
+					bResult = WriteFile(
+						hPipe6,                // handle to pipe
+						szBuffer,             // buffer to write from
+						strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
+						&cbBytes,             // number of bytes written
+						NULL);                // not overlapped I/O
+					bResult = WriteFile(
+						hPipe7,                // handle to pipe
+						szBuffer,             // buffer to write from
+						strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
+						&cbBytes,             // number of bytes written
+						NULL);                // not overlapped I/O
+
+					//end named pipe client session
+					//
+					//*************************************************************************************
+					break;
+
+				case 4: // renew tempicon
+					if (ShowTempIcon && ReIcCycle) {
+						this->RemoveTextIcons();
+						this->ProcessTextIcons();
+					}
+					break;
+
+				default:
+					break;
+			}
+
+			if (this->ShowTempIcon == 1)
+				this->ProcessTextIcons();  //icon Einstieg
+			else
+				this->RemoveTextIcons();
+
+			//	tell windows not to hold much more memspace
+			//	SetProcessWorkingSetSize(GetCurrentProcess(),65536,WANTED_MEM_SIZE);
+			break;
+
+		case WM_COMMAND:
+			if (HIWORD(mp1) == BN_CLICKED || HIWORD(mp1) == EN_CHANGE) {
+				int cmd = LOWORD(mp1);
+
+				//display temperature list
+
+				char obuf[256] = "", obuf2[128] = "", templist2[512];
+
+				strcpy_s(templist2, sizeof(templist2), "");
+
+				if (cmd == 7001 || cmd == 7002)	{
+					this->ShowAllFromDialog();
+
+					int i;
+					for (i = 0; i < 12; i++) {
+						int temp = this->State.Sensors[i];
+
+						if (temp < 128 && temp != 0) {
+							if (Fahrenheit)
+								sprintf_s(obuf2, sizeof(obuf2), "%d° F", temp * 9 / 5 + 32);
+							else
+								sprintf_s(obuf2, sizeof(obuf2), "%d° C", temp);
+
 							size_t strlen_templist2 = strlen_s(templist2, sizeof(templist2));
 
 							if (SlimDialog && StayOnTop)
@@ -1009,408 +937,398 @@ FANCONTROL::DlgProc(HWND
 
 							strcat_s(templist2, sizeof(templist2), "\r\n");
 						}
-					}
-				}
-				::SetDlgItemText(this->hwndDialog, 8101, templist2);
-				this->icontemp = this->State.Sensors[iMaxTemp];
-			};
-			//end temp display
+						else
+						{
+							if (this->ShowAll == 1)	{
+								sprintf_s(obuf2, sizeof(obuf2), "n/a");
+								size_t strlen_templist2 = strlen_s(templist2, sizeof(templist2));
 
-			if (cmd >= 8300 && cmd <= 8302 || cmd == 8310) {  // radio button or manual speed entry
-				::PostMessage(hwnd, WM__GETDATA, 0, 0);
-			}
-			else
-				switch (cmd) {
-				case 5001: // bios
-					this->ModeToDialog(1);
-					::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-					break;
+								if (SlimDialog && StayOnTop)
+									sprintf_s(templist2 + strlen_templist2, sizeof(templist2) - strlen_templist2,
+										"%d %s %s (0x%02x)", i + 1, this->State.SensorName[i], obuf2, this->State.SensorAddr[i]);
+								else
+									sprintf_s(templist2 + strlen_templist2, sizeof(templist2) - strlen_templist2,
+										"%d %s %s", i + 1, this->State.SensorName[i], obuf2);
 
-				case 5002: // smart
-					this->ModeToDialog(2);
-					::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-					break;
-
-				case 5003: // smart1
-					this->ModeToDialog(2);
-					if (this->IndSmartLevel == 1) {
-						sprintf_s(obuf
-							+
-							strlen(obuf),
-							sizeof(obuf) -
-							strlen(obuf),
-							"Activation of Fan Control Profile 'Smart Mode 1'");
-						this->Trace(obuf);
-					}
-					this->IndSmartLevel = 0;
-					// rüberkopieren
-					for (int i = 0; i < 32; i++) {
-						this->SmartLevels[i].temp = this->SmartLevels1[i].temp1;
-						this->SmartLevels[i].fan = this->SmartLevels1[i].fan1;
-					}
-					::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-					break;
-
-				case 5004: // smart2
-					this->ModeToDialog(2);
-					if (this->IndSmartLevel == 0) {
-						sprintf_s(obuf + strlen(obuf), sizeof(obuf) - strlen(obuf), "Activation of Fan Control Profile 'Smart Mode 2'");
-						this->Trace(obuf);
-					}
-					this->IndSmartLevel = 1;
-
-					for (int i = 0; i < 32; i++) {
-						this->SmartLevels[i].temp = this->SmartLevels2[i].temp2;
-						this->SmartLevels[i].fan = this->SmartLevels2[i].fan2;
-					}
-					::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-					break;
-
-				case 5005: // manual
-					this->ModeToDialog(3);
-					::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
-					break;
-
-				case 5010: // show window
-					::ShowWindow(this->hwndDialog, TRUE);
-					::SetForegroundWindow(this->hwndDialog);
-					break;
-
-				case 5040: // show window
-					if (BluetoothEDR)
-						this->SetHdw("Bluetooth", 16, 58, 32);
-					else
-						this->SetHdw("Bluetooth", 32, 59, 16);
-					break;
-
-				case 5070: // show temp icon
-					this->ShowTempIcon = 0;
-					this->pTaskbarIcon = new TASKBARICON(this->hwndDialog, 10, "TPFanControl");
-					this->pTaskbarIcon->SetIcon(this->CurrentIcon);
-					break;
-
-				case 5080: // show temp icon
-					delete this->pTaskbarIcon;
-					this->pTaskbarIcon = NULL;
-					this->ShowTempIcon = 1;
-					break;
-
-				case 5030: // hide window
-					::ShowWindow(this->hwndDialog, SW_MINIMIZE);
-					break;
-
-				case 5020: // end program
-					// Wait for the work thread to terminate
-					if (this->hThread) {
-						::WaitForSingleObject(this->hThread, INFINITE);
-					}
-					if (!this->EcAccess.Lock(100))
-					{
-						// Something is going on, let's do this later
-						this->Trace("Delaying close");
-						m_needClose = true;
-						break;
-					}
-
-					// don't close if we can't set the fan back to bios controlled
-					if (!this->ActiveMode || this->SetFan("On close", 0x80, true)) {
-						::KillTimer(this->hwndDialog, m_fanTimer);
-						::KillTimer(this->hwndDialog, m_titleTimer);
-						::KillTimer(this->hwndDialog, m_iconTimer);
-						::KillTimer(this->hwndDialog, m_renewTimer);
-						BOOL CloHT = CloseHandle(this->hThread);
-						// BOOL CloHM=CloseHandle(this->hLock);
-						// BOOL CloHS=CloseHandle(this->hLockS);
-						this->Trace("Exiting ProcessDialog");
-						::PostMessage(hwnd, WM__DISMISSDLG, IDCANCEL, 0); // exit from ProcessDialog()
-					}
-					else
-					{
-						m_needClose = true;
-					}
-					this->EcAccess.Unlock();
-
-					break;
-				}
-		}
-		break;
-
-	case WM_CLOSE:
-		::ShowWindow(this->hwndDialog, SW_MINIMIZE);
-		rc = TRUE;
-		break;
-
-	case WM_POWERBROADCAST:
-		if (mp1 == PBT_POWERSETTINGCHANGE) {
-			POWERBROADCAST_SETTING* pbs = (POWERBROADCAST_SETTING*)mp2;
-			if (pbs->PowerSetting == GUID_LIDSWITCH_STATE_CHANGE) {
-				BYTE state = *(BYTE*)(&pbs->Data);
-				if (state == 0) {  // Lid closed
-					this->isLidClosed = true;
-					if (this->lidClosedMode == 1) {
-						this->Trace("Lid closed detected, will switch to BIOS mode.");
-						this->previousModeBeforeLidClose = this->CurrentMode;
-						this->ModeToDialog(1);
-						ok = this->SetFan("Lid close, Switch to BIOS Mode", 0x80);
-						if (ok) {
-							this->Trace("Set to BIOS Mode due to lid close");
-							::Sleep(1000);
+								strcat_s(templist2, sizeof(templist2), "\r\n");
+							}
 						}
 					}
-					else {
-						this->previousModeBeforeLidClose = this->CurrentMode;
-						this->Trace("Lid closed detected but continuing operation.");
-					}
+					::SetDlgItemText(this->hwndDialog, 8101, templist2);
+					this->icontemp = this->State.Sensors[iMaxTemp];
+				};
+				//end temp display
+
+				if (cmd >= 8300 && cmd <= 8302 || cmd == 8310) {  // radio button or manual speed entry
+					::PostMessage(hwnd, WM__GETDATA, 0, 0);
 				}
-				else { // Lid opened
-					if (this->isLidClosed) {
-						this->Trace("Lid opened detected, will switch to previous mode.");
-						this->ModeToDialog(this->previousModeBeforeLidClose);
-						this->Trace("Set to previous Mode due to lid open");
+				else
+					switch (cmd) {
+						case 5001: // bios
+							this->ModeToDialog(1);
+							::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+							break;
+
+						case 5002: // smart
+							this->ModeToDialog(2);
+							::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+							break;
+
+						case 5003: // smart1
+							this->ModeToDialog(2);
+							if (this->IndSmartLevel == 1) {
+								sprintf_s(obuf
+									+
+									strlen(obuf),
+									sizeof(obuf) -
+									strlen(obuf),
+									"Activation of Fan Control Profile 'Smart Mode 1'");
+								this->Trace(obuf);
+							}
+							this->IndSmartLevel = 0;
+							for (int i = 0; i < 32; i++) {
+								this->SmartLevels[i].temp = this->SmartLevels1[i].temp1;
+								this->SmartLevels[i].fan = this->SmartLevels1[i].fan1;
+							}
+							::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+							break;
+
+						case 5004: // smart2
+							this->ModeToDialog(2);
+							if (this->IndSmartLevel == 0) {
+								sprintf_s(obuf + strlen(obuf), sizeof(obuf) - strlen(obuf), "Activation of Fan Control Profile 'Smart Mode 2'");
+								this->Trace(obuf);
+							}
+							this->IndSmartLevel = 1;
+
+							for (int i = 0; i < 32; i++) {
+								this->SmartLevels[i].temp = this->SmartLevels2[i].temp2;
+								this->SmartLevels[i].fan = this->SmartLevels2[i].fan2;
+							}
+							::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+							break;
+
+						case 5005: // manual
+							this->ModeToDialog(3);
+							::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
+							break;
+
+						case 5010: // show window
+							::ShowWindow(this->hwndDialog, TRUE);
+							::SetForegroundWindow(this->hwndDialog);
+							break;
+
+						case 5040: // show window
+							if (BluetoothEDR)
+								this->SetHdw("Bluetooth", 16, 58, 32);
+							else
+								this->SetHdw("Bluetooth", 32, 59, 16);
+							break;
+
+						case 5070: // show temp icon
+							this->ShowTempIcon = 0;
+							this->pTaskbarIcon = new TASKBARICON(this->hwndDialog, 10, "TPFanControl");
+							this->pTaskbarIcon->SetIcon(this->CurrentIcon);
+							break;
+
+						case 5080: // show temp icon
+							delete this->pTaskbarIcon;
+							this->pTaskbarIcon = NULL;
+							this->ShowTempIcon = 1;
+							break;
+
+						case 5030: // hide window
+							::ShowWindow(this->hwndDialog, SW_MINIMIZE);
+							break;
+
+						case 5020: // end program
+							// Wait for the work thread to terminate
+							if (this->hThread) {
+								::WaitForSingleObject(this->hThread, INFINITE);
+							}
+							if (!this->EcAccess.Lock(100)) {
+								// Something is going on, let's do this later
+								this->Trace("Delaying close");
+								m_needClose = true;
+								break;
+							}
+
+							// don't close if we can't set the fan back to bios controlled
+							if (!this->ActiveMode || this->SetFan("On close", 0x80, true)) {
+								::KillTimer(this->hwndDialog, m_fanTimer);
+								::KillTimer(this->hwndDialog, m_titleTimer);
+								::KillTimer(this->hwndDialog, m_iconTimer);
+								::KillTimer(this->hwndDialog, m_renewTimer);
+								BOOL CloHT = CloseHandle(this->hThread);
+								// BOOL CloHM=CloseHandle(this->hLock);
+								// BOOL CloHS=CloseHandle(this->hLockS);
+								this->Trace("Exiting ProcessDialog");
+								::PostMessage(hwnd, WM__DISMISSDLG, IDCANCEL, 0); // exit from ProcessDialog()
+							}
+							else {
+								m_needClose = true;
+							}
+							this->EcAccess.Unlock();
+							break;
 					}
-					this->isLidClosed = false;
+			}
+			break;
+
+		case WM_CLOSE:
+			::ShowWindow(this->hwndDialog, SW_MINIMIZE);
+			rc = TRUE;
+			break;
+
+		case WM_POWERBROADCAST:
+			if (mp1 == PBT_POWERSETTINGCHANGE) {
+				POWERBROADCAST_SETTING* pbs = (POWERBROADCAST_SETTING*)mp2;
+				if (pbs->PowerSetting == GUID_LIDSWITCH_STATE_CHANGE) {
+					BYTE state = *(BYTE*)(&pbs->Data);
+					if (state == 0) {  // Lid closed
+						this->isLidClosed = true;
+						if (this->lidClosedMode == 1) {
+							this->Trace("Lid closed detected, will switch to BIOS mode.");
+							this->previousModeBeforeLidClose = this->CurrentMode;
+							this->ModeToDialog(1);
+							ok = this->SetFan("Lid close, Switch to BIOS Mode", 0x80);
+							if (ok) {
+								this->Trace("Set to BIOS Mode due to lid close");
+								::Sleep(1000);
+							}
+						}
+						else {
+							this->previousModeBeforeLidClose = this->CurrentMode;
+							this->Trace("Lid closed detected but continuing operation.");
+						}
+					}
+					else { // Lid opened
+						if (this->isLidClosed) {
+							this->Trace("Lid opened detected, will switch to previous mode.");
+							this->ModeToDialog(this->previousModeBeforeLidClose);
+							this->Trace("Set to previous Mode due to lid open");
+						}
+						this->isLidClosed = false;
+					}
 				}
 			}
-		}
-		break;
+			break;
 
-	case WM_ENDSESSION:  //WM_QUERYENDSESSION?
-		if (!this->Runs_as_service) {
-			// End program
-			// Wait for the work thread to terminate
+		case WM_ENDSESSION:  //WM_QUERYENDSESSION?
+			if (!this->Runs_as_service) {
+				// End program
+				// Wait for the work thread to terminate
+				if (this->hThread) {
+					::WaitForSingleObject(this->hThread, INFINITE);
+				}
+				if (!this->EcAccess.Lock(100)) {
+					// Something is going on, let's do this later
+					this->Trace("Delaying close");
+					m_needClose = true;
+					break;
+				}
+
+				// don't close if we can't set the fan back to bios controlled
+				if (!this->ActiveMode || this->SetFan("On close", 0x80, true)) {
+					::KillTimer(this->hwndDialog, m_fanTimer);
+					::KillTimer(this->hwndDialog, m_titleTimer);
+					::KillTimer(this->hwndDialog, m_iconTimer);
+					::KillTimer(this->hwndDialog, m_renewTimer);
+					BOOL CloHT = CloseHandle(this->hThread);
+					// BOOL CloHM=CloseHandle(this->hLock);
+					// BOOL CloHS=CloseHandle(this->hLockS);
+					this->Trace("Exiting ProcessDialog");
+					::PostMessage(hwnd, WM__DISMISSDLG, IDCANCEL, 0); // exit from ProcessDialog()
+				}
+				else {
+					m_needClose = true;
+				}
+				this->EcAccess.Unlock();
+			}
+			break;
+
+	//	case WM_MOVE:
+		case WM_SIZE:
+			if (mp1 == SIZE_MINIMIZED && this->MinimizeToSysTray) {
+				::ShowWindow(this->hwndDialog, FALSE);
+			}
+			rc = TRUE;
+			break;
+
+		case WM_DESTROY:
+			break;
+
+			//
+			// USER messages
+			//
+
+		case WM__GETDATA:
+			if (!this->hThread && !this->FinalSeen) {
+				this->hThread = this->CreateThread(FANCONTROL_Thread, (ULONG)this);
+			}
+			break;
+
+		case WM__NEWDATA:
 			if (this->hThread) {
 				::WaitForSingleObject(this->hThread, INFINITE);
-			}
-			if (!this->EcAccess.Lock(100))
-			{
-				// Something is going on, let's do this later
-				this->Trace("Delaying close");
-				m_needClose = true;
-				break;
-			}
-
-			// don't close if we can't set the fan back to bios controlled
-			if (!this->ActiveMode || this->SetFan("On close", 0x80, true)) {
-				::KillTimer(this->hwndDialog, m_fanTimer);
-				::KillTimer(this->hwndDialog, m_titleTimer);
-				::KillTimer(this->hwndDialog, m_iconTimer);
-				::KillTimer(this->hwndDialog, m_renewTimer);
-				BOOL CloHT = CloseHandle(this->hThread);
-				// BOOL CloHM=CloseHandle(this->hLock);
-				// BOOL CloHS=CloseHandle(this->hLockS);
-				this->Trace("Exiting ProcessDialog");
-				::PostMessage(hwnd, WM__DISMISSDLG, IDCANCEL, 0); // exit from ProcessDialog()
-			}
-			else
-			{
-				m_needClose = true;
-			}
-			this->EcAccess.Unlock();
-		}
-		break;
-
-		//	case WM_MOVE:
-	case WM_SIZE:
-		if (mp1 == SIZE_MINIMIZED && this->MinimizeToSysTray) {
-			::ShowWindow(this->hwndDialog, FALSE);
-		}
-		rc = TRUE;
-		break;
-
-	case WM_DESTROY:
-		break;
-
-		//
-		// USER messages
-		//
-
-	case WM__GETDATA:
-		if (!this->hThread && !this->FinalSeen)
-		{
-			this->hThread = this->CreateThread(FANCONTROL_Thread, (ULONG)this);
-		}
-		break;
-
-	case WM__NEWDATA:
-		if (this->hThread) {
-			::WaitForSingleObject(this->hThread, INFINITE);
-			if (this->hThread)
-				::CloseHandle(this->hThread);
-			else {
-				this->Trace("Exception detected, closing to BIOS mode");
-				::SendMessage(this->hwndDialog, WM_ENDSESSION, 0, 0);
-			}
-			this->hThread = 0;
-		}
-
-		ok = mp1;  // equivalent of "ok = this->ReadEcStatus(&this->State);" via thread
-
-		// Notifies program if pending suspension operation has occurred.
-		if (!DefWindowProc(this->hwndDialog, WM_POWERBROADCAST, PBT_APMSUSPEND, NULL)) {
-			this->Trace("Systen suspension detected, closing to BIOS mode");
-			::Sleep(1000);
-			::SendMessage(this->hwndDialog, WM_ENDSESSION, 0, 0);
-		}
-
-		if (ok) {
-			this->ReadErrorCount = 0;
-			this->HandleData();
-
-			if (m_needClose)
-			{
-				this->Trace("Program needs to be closed, changing to BIOS mode");
-				::Sleep(1000);
-				::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
-				::SendMessage(this->hwndDialog, WM_ENDSESSION, 0, 0);
-				m_needClose = false;
-			}
-		}
-		else {
-			sprintf_s(buf, sizeof(buf), "Warning: can't read Status, read error count = %d", this->ReadErrorCount);
-			this->Trace(buf);
-			sprintf_s(buf, sizeof(buf), "We will close to BIOS-Mode after %d consecutive read errors", this->MaxReadErrors);
-			this->Trace(buf);
-			this->ReadErrorCount++;
-
-			// after so many consecutive read errors, try to switch back to bios mode
-			if (this->ReadErrorCount > this->MaxReadErrors) {
-				this->ModeToDialog(1);
-				ok = this->SetFan("Max. Errors", 0x80);
-				if (ok) {
-					this->Trace("Set to BIOS Mode, to many consecutive read errors");
-					::Sleep(2000);
+				if (this->hThread)
+					::CloseHandle(this->hThread);
+				else {
+					this->Trace("Exception detected, closing to BIOS mode");
 					::SendMessage(this->hwndDialog, WM_ENDSESSION, 0, 0);
 				}
-			}
-		}
-		break;
-
-	case WM__TASKBAR:
-
-		switch (mp2) {
-
-		case WM_LBUTTONDOWN:
-
-			if (!IsWindowVisible(this->hwndDialog)) {
-				::ShowWindow(this->hwndDialog, TRUE);
-				::SetForegroundWindow(this->hwndDialog);
-			}
-			else
-				::ShowWindow(this->hwndDialog, SW_MINIMIZE);
-			break;
-
-		case WM_LBUTTONUP:
-		{
-			BOOL
-				isshift = ::GetAsyncKeyState(VK_SHIFT) & 0x8000,
-				isctrl = ::GetAsyncKeyState(VK_CONTROL) & 0x8000;
-
-			int action = -1;
-
-			// some fancy key dependent stuff could be done here.
-
-		}
-		break;
-
-		case WM_LBUTTONDBLCLK:
-
-			if (!IsWindowVisible(this->hwndDialog)) {
-				::ShowWindow(this->hwndDialog, TRUE);
-				::SetForegroundWindow(this->hwndDialog);
-			}
-			else
-				::ShowWindow(this->hwndDialog, SW_MINIMIZE);
-			break;
-
-			char testpara;
-		case WM_RBUTTONDOWN:
-		{
-			MENU m(5000);
-
-			if (!this->LockECAccess()) break;
-
-			ok = this->ReadByteFromEC(59, &testpara);
-			if (testpara & 2)
-				m.CheckMenuItem(5060);
-
-			if (this->BluetoothEDR) {
-				ok = this->ReadByteFromEC(58, &testpara);
-				if (testpara & 16) m.CheckMenuItem(5040);
-			}
-			else {
-				ok = this->ReadByteFromEC(59, &testpara);
-				if (testpara & 32) m.CheckMenuItem(5040);
+				this->hThread = 0;
 			}
 
-			int mode = this->CurrentModeFromDialog();
-			if (mode == 1) {
-				m.CheckMenuItem(5001);
+			ok = mp1;  // equivalent of "ok = this->ReadEcStatus(&this->State);" via thread
 
-				if (this->ActiveMode == 0) {
-					m.DisableMenuItem(5002);  // v0.25
-					m.DisableMenuItem(5003);  // v0.25
-					m.DisableMenuItem(5004);  // v0.25
-					m.DisableMenuItem(5005);  // v0.25
+			// Notifies program if pending suspension operation has occurred.
+			if (!DefWindowProc(this->hwndDialog, WM_POWERBROADCAST, PBT_APMSUSPEND, NULL)) {
+				this->Trace("Systen suspension detected, closing to BIOS mode");
+				::Sleep(1000);
+				::SendMessage(this->hwndDialog, WM_ENDSESSION, 0, 0);
+			}
+
+			if (ok) {
+				this->ReadErrorCount = 0;
+				this->HandleData();
+
+				if (m_needClose) {
+					this->Trace("Program needs to be closed, changing to BIOS mode");
+					::Sleep(1000);
+					::PostMessage(this->hwndDialog, WM_COMMAND, 5020, 0);
+					::SendMessage(this->hwndDialog, WM_ENDSESSION, 0, 0);
+					m_needClose = false;
 				}
 			}
-			else
-				if (mode == 2)
-					m.CheckMenuItem(5002);
+			else {
+				sprintf_s(buf, sizeof(buf), "Warning: can't read Status, read error count = %d", this->ReadErrorCount);
+				this->Trace(buf);
+				sprintf_s(buf, sizeof(buf), "We will close to BIOS-Mode after %d consecutive read errors", this->MaxReadErrors);
+				this->Trace(buf);
+				this->ReadErrorCount++;
 
-			if (mode == 3)
-				m.CheckMenuItem(5005);
-
-			m.InsertItem(this->MenuLabelSM1, 5003, 10);
-			m.InsertItem(this->MenuLabelSM2, 5004, 11);
-
-			if (this->SmartLevels2[0].temp2 == 0)
-			{
-				m.DeleteMenuItem(5003);
-				m.DeleteMenuItem(5004);
+				// after so many consecutive read errors, try to switch back to bios mode
+				if (this->ReadErrorCount > this->MaxReadErrors) {
+					this->ModeToDialog(1);
+					ok = this->SetFan("Max. Errors", 0x80);
+					if (ok) {
+						this->Trace("Set to BIOS Mode, to many consecutive read errors");
+						::Sleep(2000);
+						::SendMessage(this->hwndDialog, WM_ENDSESSION, 0, 0);
+					}
+				}
 			}
+			break;
 
-			if (this->SmartLevels2[0].temp2 != 0)
-			{
-				m.DeleteMenuItem(5002);
+		case WM__TASKBAR:
+			switch (mp2) {
+				case WM_LBUTTONDOWN:
+					if (!IsWindowVisible(this->hwndDialog)) {
+						::ShowWindow(this->hwndDialog, TRUE);
+						::SetForegroundWindow(this->hwndDialog);
+					}
+					else
+						::ShowWindow(this->hwndDialog, SW_MINIMIZE);
+					break;
 
-				if (mode == 2 && this->IndSmartLevel == 0)
-					m.CheckMenuItem(5003);
+				case WM_LBUTTONUP:
+					BOOL isshift = ::GetAsyncKeyState(VK_SHIFT) & 0x8000;
+					BOOL isctrl = ::GetAsyncKeyState(VK_CONTROL) & 0x8000;
 
-				if (mode == 2 && this->IndSmartLevel != 0)
-					m.CheckMenuItem(5004);
+					int action = -1;
+
+					// some fancy key dependent stuff could be done here.
+					break;
+
+				case WM_LBUTTONDBLCLK:
+					if (!IsWindowVisible(this->hwndDialog)) {
+						::ShowWindow(this->hwndDialog, TRUE);
+						::SetForegroundWindow(this->hwndDialog);
+					}
+					else
+						::ShowWindow(this->hwndDialog, SW_MINIMIZE);
+					break;
+
+				case WM_RBUTTONDOWN:
+					char testpara;
+
+					MENU m(5000);
+
+					if (!this->LockECAccess()) break;
+
+					ok = this->ReadByteFromEC(59, &testpara);
+					if (testpara & 2)
+						m.CheckMenuItem(5060);
+
+					if (this->BluetoothEDR) {
+						ok = this->ReadByteFromEC(58, &testpara);
+						if (testpara & 16) m.CheckMenuItem(5040);
+					}
+					else {
+						ok = this->ReadByteFromEC(59, &testpara);
+						if (testpara & 32) m.CheckMenuItem(5040);
+					}
+
+					int mode = this->CurrentModeFromDialog();
+					if (mode == 1) {
+						m.CheckMenuItem(5001);
+						if (this->ActiveMode == 0) {
+							m.DisableMenuItem(5002);
+							m.DisableMenuItem(5003);
+							m.DisableMenuItem(5004);
+							m.DisableMenuItem(5005);
+						}
+					}
+					else if (mode == 2)
+						m.CheckMenuItem(5002);
+					else if (mode == 3)
+						m.CheckMenuItem(5005);
+
+					m.InsertItem(this->MenuLabelSM1, 5003, 10);
+					m.InsertItem(this->MenuLabelSM2, 5004, 11);
+
+					if (this->SmartLevels2[0].temp2 == 0) {
+						m.DeleteMenuItem(5003);
+						m.DeleteMenuItem(5004);
+					}
+					else {
+						m.DeleteMenuItem(5002);
+
+						if (mode == 2) {
+							if (this->IndSmartLevel == 0)
+								m.CheckMenuItem(5003);
+							else
+								m.CheckMenuItem(5004);
+						}
+					}
+
+					if (Runs_as_service)
+						m.DeleteMenuItem(5020);
+
+					if (IsWindowVisible(this->hwndDialog))
+						m.DeleteMenuItem(5010);
+					else
+						m.DeleteMenuItem(5030);
+
+
+					if (this->ShowTempIcon == 0)
+						m.DeleteMenuItem(5070);
+					else
+						m.DeleteMenuItem(5080);
+
+					this->FreeECAccess();
+
+					m.Popup(this->hwndDialog);
+					break;
 			}
+			rc = TRUE;
+			break;
 
-			if (Runs_as_service)
-				m.DeleteMenuItem(5020);
-
-			if (!IsWindowVisible(this->hwndDialog))
-				m.DeleteMenuItem(5030);
-
-			if (IsWindowVisible(this->hwndDialog))
-				m.DeleteMenuItem(5010);
-
-			if (this->ShowTempIcon == 0)
-				m.DeleteMenuItem(5070);
-
-			if (this->ShowTempIcon == 1)
-				m.DeleteMenuItem(5080);
-
-			this->FreeECAccess();
-
-			m.Popup(this->hwndDialog);
-		}
-		break;
-		}
-		rc = TRUE;
-		break;
-
-	default:
-		break;
-
+		default:
+			break;
 	}
 
-	return
-		rc;
+	return rc;
 }
 
 //-------------------------------------------------------------------------
@@ -1447,35 +1365,35 @@ void FANCONTROL::ProcessTextIcons(void) {
 
 	if (this->IconColorFan) {
 		switch (fan1speed / 1000) {
-		case 0:
-			break;
-		case 1:
-			icon = 21; //sehr hell grün
-			break;
-		case 2:
-			icon = 22; //hell grün
-			break;
-		case 3:
-			icon = 23; //grün
-			break;
-		case 4:
-			icon = 24; //dunkel grün
-			break;
-		case 5:
-			icon = 25; //sehr dunkel grün
-			break;
-		case 6:
-			icon = 25; //sehr dunkel grün
-			break;
-		case 7:
-			icon = 25; //sehr dunkel grün
-			break;
-		case 8:
-			icon = 25; //sehr dunkel grün
-			break;
-		default:
-			icon = oldicon;
-			break;
+			case 0:
+				break;
+			case 1:
+				icon = 21; //sehr hell grün
+				break;
+			case 2:
+				icon = 22; //hell grün
+				break;
+			case 3:
+				icon = 23; //grün
+				break;
+			case 4:
+				icon = 24; //dunkel grün
+				break;
+			case 5:
+				icon = 25; //sehr dunkel grün
+				break;
+			case 6:
+				icon = 25; //sehr dunkel grün
+				break;
+			case 7:
+				icon = 25; //sehr dunkel grün
+				break;
+			case 8:
+				icon = 25; //sehr dunkel grün
+				break;
+			default:
+				icon = oldicon;
+				break;
 		};
 	}
 
