@@ -247,8 +247,8 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 
 		if (!NoWaitMessage) {
 			sprintf_s(bufsec, sizeof(bufsec),
-				"TPFanControl is started %d sec. after\nboot time (SecWinUptime=%d sec.)\n\nTo prevent missing systray icons\nand communication errors between\nTPFanControl and embedded controller\nit will sleep for %d sec. (SecStartDelay)\n\nTo void this message box please set\nNoWaitMessage=1 in TPFanControl.ini",
-				tickCount / 1000, SecWinUptime, SecStartDelay);
+				"TPFanControl delayed by %d sec. after\nboot time (SecWinUptime= %d sec.)\n\nto prevent missing systray icons\nand communication errors between\nTPFanControl and embedded controller\n\n\nTo avoid this message box set\nNoWaitMessage=1 in TPFanControl.ini",
+				SecStartDelay, SecWinUptime );
 
 			// Don't show message box when as service in Vista
 			OSVERSIONINFOEX os = { sizeof(os) };
@@ -256,7 +256,7 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 			if (os.dwMajorVersion >= 6 && Runs_as_service == TRUE)
 				;
 			else
-				MessageBox(NULL, bufsec, "TPFanControl is sleeping", MB_ICONEXCLAMATION);
+				MessageBox(NULL, bufsec, "TPFanControl delaying startup", MB_ICONEXCLAMATION);
 		}
 	}
 
