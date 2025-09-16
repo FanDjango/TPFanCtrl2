@@ -234,36 +234,37 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 		}
 	}
 
-	//  wait xx seconds to start tpfc while booting to save icon
+	// decide if startup delay is needed/requested
+	DWORD tickCount = GetTickCount();
+
 	char bufsec[1024] = "";
-	int tickCount = GetTickCount(); // +262144;
 
 	sprintf_s(bufsec, sizeof(bufsec), "Windows uptime since boot %d sec., SecWinUptime= %d sec.", tickCount / 1000, SecWinUptime);
 	this->Trace(bufsec);
 
-	if ((tickCount / 1000) <= SecWinUptime) {
+	if ((tickCount / 1000) <= (DWORD)SecWinUptime) {
 		sprintf_s(bufsec, sizeof(bufsec), "Delay startup to allow windows to settle, SecStartDelay= %d sec.", SecStartDelay);
 		this->Trace(bufsec);
 
-		if (!NoWaitMessage) {
-			sprintf_s(bufsec, sizeof(bufsec),
-				"TPFanControl delayed by %d sec. after\nboot time (SecWinUptime= %d sec.)\n\nto prevent missing systray icons\nand communication errors between\nTPFanControl and embedded controller\n\n\nTo avoid this message box set\nNoWaitMessage=1 in TPFanControl.ini",
-				SecStartDelay, SecWinUptime );
+		if (SecStartDelay > 0) {
+			if (!NoWaitMessage) {
+				sprintf_s(bufsec, sizeof(bufsec),
+					"TPFanControl delayed by %d sec. after\nboot time (SecWinUptime= %d sec.)\n\nto prevent missing systray icons\nand communication errors between\nTPFanControl and embedded controller\n\n\nTo avoid this message box set\nNoWaitMessage=1 in TPFanControl.ini",
+					SecStartDelay, SecWinUptime);
 
-			// Don't show message box when as service in Vista
-			OSVERSIONINFOEX os = { sizeof(os) };
-			VerifyVersionInfoA(&os, VER_MAJORVERSION, 1);
-			if (os.dwMajorVersion >= 6 && Runs_as_service == TRUE)
-				;
-			else
-				MessageBox(NULL, bufsec, "TPFanControl delaying startup", MB_ICONEXCLAMATION);
+				// Don't show message box when as service in Vista
+				OSVERSIONINFOEX os = { sizeof(os) };
+				VerifyVersionInfoA(&os, VER_MAJORVERSION, 1);
+				if (os.dwMajorVersion >= 6 && Runs_as_service == TRUE)
+					;
+				else
+					MessageBox(NULL, bufsec, "TPFanControl delaying startup", MB_ICONEXCLAMATION);
+			}
+
+			// sleep until start time + delay time
+			while ((DWORD)(tickCount + SecStartDelay * 1000) >= GetTickCount())
+				Sleep(200);
 		}
-	}
-
-	// sleep until start time + delay time
-	if ((GetTickCount() / 1000) <= (DWORD)SecWinUptime) {
-		while ((DWORD)(tickCount + SecStartDelay * 1000) >= GetTickCount())
-			Sleep(200);
 	}
 
 	// taskbaricon (keep code after reading config)
