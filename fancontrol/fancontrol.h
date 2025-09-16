@@ -179,7 +179,6 @@ protected:
 
 	char Title[128];
 	char Title2[128];
-	char Title3[128];
 	char LastTitle[128];
 	char LastTooltip[128];
 	char CurrentStatus[256];

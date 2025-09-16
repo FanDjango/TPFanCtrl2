@@ -126,7 +126,6 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	// clear title strings
 	setzero(this->Title, sizeof(this->Title));
 	setzero(this->Title2, sizeof(this->Title2));
-	setzero(this->Title3, sizeof(this->Title3));
 	setzero(this->LastTitle, sizeof(this->LastTitle));
 	setzero(this->CurrentStatus, sizeof(this->CurrentStatus));
 	setzero(this->CurrentStatuscsv, sizeof(this->CurrentStatuscsv));
@@ -199,19 +198,6 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	this->SmartLevels2[i].fan2 = 0;
 	i++;
 
-	// code title3
-	char bias = 100;
-	for (int _i = 0; _i < 111; _i++) {
-		switch (_i) {
-		case 0:
-			this->Title3[0] = 32;
-			break;            //blank
-		case 13:
-			this->Title3[13] = 32;
-			break;
-		}
-	}
-
 	// read config file
 	this->ReadConfig("TPFanControl.ini");
 
@@ -219,7 +205,6 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 		::GetWindowText(this->hwndDialog, this->Title, sizeof(this->Title));
 
 		strcat_s(this->Title, sizeof(this->Title), " V" FANCONTROLVERSION);
-		strcat_s(this->Title, sizeof(this->Title), this->Title3);
 
 		::SetWindowText(this->hwndDialog, this->Title);
 
@@ -255,8 +240,6 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 			::GetWindowText(this->hwndDialog, this->Title, sizeof(this->Title));
 
 			strcat_s(this->Title, sizeof(this->Title), ".63 multiHotKey");
-
-			if (SlimDialog == 0) strcat_s(this->Title, sizeof(this->Title), this->Title3);
 
 			::SetWindowText(this->hwndDialog, this->Title);
 
