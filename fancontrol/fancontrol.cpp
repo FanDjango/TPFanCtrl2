@@ -128,7 +128,6 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	setzero(this->Title2, sizeof(this->Title2));
 	setzero(this->Title3, sizeof(this->Title3));
 	setzero(this->Title4, sizeof(this->Title4));
-	setzero(this->Title5, sizeof(this->Title5));
 	setzero(this->LastTitle, sizeof(this->LastTitle));
 	setzero(this->CurrentStatus, sizeof(this->CurrentStatus));
 	setzero(this->CurrentStatuscsv, sizeof(this->CurrentStatuscsv));
@@ -1293,12 +1292,6 @@ FANCONTROL::DlgProc(HWND
 						this->SetHdw("Bluetooth", 16, 58, 32);
 					else 
 						this->SetHdw("Bluetooth", 32, 59, 16);
-					break;
-
-				case 5050: // donate
-					::ShellExecute(NULL,
-						"open", Title5,
-						NULL, NULL, SW_SHOW);
 					break;
 
 				case 5070: // show temp icon
