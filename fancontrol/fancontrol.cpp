@@ -301,17 +301,16 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	// make it call HandleControl initially
 	::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
 
-	m_fanTimer = ::SetTimer(this->hwndDialog, 1, this->Cycle * 1000, NULL);    // fan update
-	m_titleTimer = ::SetTimer(this->hwndDialog, 2, 500, NULL);                // title update
-	m_iconTimer = ::SetTimer(this->hwndDialog, 3, this->IconCycle * 1000, NULL); // Vista icon update
+	m_fanTimer = ::SetTimer(this->hwndDialog, 1, this->Cycle * 1000, NULL);           // fan update
+	m_titleTimer = ::SetTimer(this->hwndDialog, 2, 500, NULL);                        // title update
+	m_iconTimer = ::SetTimer(this->hwndDialog, 3, this->IconCycle * 1000, NULL);      // Vista icon update
 	if (this->ReIcCycle)
 		m_renewTimer = ::SetTimer(this->hwndDialog, 4, this->ReIcCycle * 1000, NULL); // Vista icon update
 
-	if (!this->StartMinimized)
-		::ShowWindow(this->hwndDialog, TRUE);
-
 	if (this->StartMinimized)
 		::ShowWindow(this->hwndDialog, SW_MINIMIZE);
+	else
+		::ShowWindow(this->hwndDialog, TRUE);
 }
 
 //-------------------------------------------------------------------------
