@@ -1232,12 +1232,14 @@ FANCONTROL::DlgProc(HWND
 					break;
 
 				case WM_LBUTTONUP:
+				{
 					BOOL isshift = ::GetAsyncKeyState(VK_SHIFT) & 0x8000;
 					BOOL isctrl = ::GetAsyncKeyState(VK_CONTROL) & 0x8000;
 
 					int action = -1;
 
 					// some fancy key dependent stuff could be done here.
+				}
 					break;
 
 				case WM_LBUTTONDBLCLK:
@@ -1249,9 +1251,9 @@ FANCONTROL::DlgProc(HWND
 						::ShowWindow(this->hwndDialog, SW_MINIMIZE);
 					break;
 
+				char testpara;
 				case WM_RBUTTONDOWN:
-					char testpara;
-
+				{
 					MENU m(5000);
 
 					if (!this->LockECAccess()) break;
@@ -1319,6 +1321,7 @@ FANCONTROL::DlgProc(HWND
 					this->FreeECAccess();
 
 					m.Popup(this->hwndDialog);
+				}
 					break;
 			}
 			rc = TRUE;
