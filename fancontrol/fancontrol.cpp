@@ -1251,24 +1251,24 @@ FANCONTROL::DlgProc(HWND
 						::ShowWindow(this->hwndDialog, SW_MINIMIZE);
 					break;
 
-				char testpara;
 				case WM_RBUTTONDOWN:
-				{
 					MENU m(5000);
 
 					if (!this->LockECAccess()) break;
 
-					ok = this->ReadByteFromEC(59, &testpara);
-					if (testpara & 2)
-						m.CheckMenuItem(5060);
-
-					if (this->BluetoothEDR) {
-						ok = this->ReadByteFromEC(58, &testpara);
-						if (testpara & 16) m.CheckMenuItem(5040);
-					}
-					else {
+					{
+						char testpara;
 						ok = this->ReadByteFromEC(59, &testpara);
-						if (testpara & 32) m.CheckMenuItem(5040);
+						if (testpara & 2) m.CheckMenuItem(5060);
+
+						if (this->BluetoothEDR) {
+							ok = this->ReadByteFromEC(58, &testpara);
+							if (testpara & 16) m.CheckMenuItem(5040);
+						}
+						else {
+							ok = this->ReadByteFromEC(59, &testpara);
+							if (testpara & 32) m.CheckMenuItem(5040);
+						}
 					}
 
 					int mode = this->CurrentModeFromDialog();
@@ -1321,7 +1321,6 @@ FANCONTROL::DlgProc(HWND
 					this->FreeECAccess();
 
 					m.Popup(this->hwndDialog);
-				}
 					break;
 			}
 			rc = TRUE;
