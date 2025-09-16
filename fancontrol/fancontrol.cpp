@@ -213,7 +213,7 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 
 		_itoa_s(this->ManFanSpeed, buf, 10);
 		::SetDlgItemText(this->hwndDialog, 8310, buf);
-		
+
 		this->hPowerNotify = RegisterPowerSettingNotification(this->hwndDialog, &GUID_LIDSWITCH_STATE_CHANGE, DEVICE_NOTIFY_WINDOW_HANDLE);
 
 		if (SlimDialog == 1) {
@@ -234,7 +234,7 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 		}
 	}
 
-	// decide if startup delay is needed/requested
+	// decide if startup delay is needed/requested, perform startup delay
 	DWORD tickCount = GetTickCount();
 
 	char bufsec[1024] = "";
@@ -242,32 +242,30 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	sprintf_s(bufsec, sizeof(bufsec), "Windows uptime since boot %d sec., SecWinUptime= %d sec.", tickCount / 1000, SecWinUptime);
 	this->Trace(bufsec);
 
-	if ((tickCount / 1000) <= (DWORD)SecWinUptime) {
+	if ((SecStartDelay > 0) && ((tickCount / 1000) <= (DWORD)SecWinUptime)) {
 		sprintf_s(bufsec, sizeof(bufsec), "Delay startup to allow windows to settle, SecStartDelay= %d sec.", SecStartDelay);
 		this->Trace(bufsec);
 
-		if (SecStartDelay > 0) {
-			if (!NoWaitMessage) {
-				sprintf_s(bufsec, sizeof(bufsec),
-					"TPFanControl delayed by %d sec. after\nboot time (SecWinUptime= %d sec.)\n\nto prevent missing systray icons\nand communication errors between\nTPFanControl and embedded controller\n\n\nTo avoid this message box set\nNoWaitMessage=1 in TPFanControl.ini",
-					SecStartDelay, SecWinUptime);
+		if (!NoWaitMessage) {
+			sprintf_s(bufsec, sizeof(bufsec),
+				"TPFanControl delayed by %d sec. after\nboot time (SecWinUptime= %d sec.)\n\nto prevent missing systray icons\nand communication errors between\nTPFanControl and embedded controller\n\n\nTo avoid this message box set\nNoWaitMessage=1 in TPFanControl.ini",
+				SecStartDelay, SecWinUptime);
 
-				// Don't show message box when as service in Vista
-				OSVERSIONINFOEX os = { sizeof(os) };
-				VerifyVersionInfoA(&os, VER_MAJORVERSION, 1);
-				if (os.dwMajorVersion >= 6 && Runs_as_service == TRUE)
-					;
-				else
-					MessageBox(NULL, bufsec, "TPFanControl delaying startup", MB_ICONEXCLAMATION);
-			}
-
-			// sleep until start time + delay time
-			while ((DWORD)(tickCount + SecStartDelay * 1000) >= GetTickCount())
-				Sleep(200);
+			// Don't show message box when as service in Vista
+			OSVERSIONINFOEX os = { sizeof(os) };
+			VerifyVersionInfoA(&os, VER_MAJORVERSION, 1);
+			if (os.dwMajorVersion >= 6 && Runs_as_service == TRUE)
+				;
+			else
+				MessageBox(NULL, bufsec, "TPFanControl delaying startup", MB_ICONEXCLAMATION);
 		}
+
+		// sleep until start time + delay time
+		while ((DWORD)(tickCount + SecStartDelay * 1000) >= GetTickCount())
+			Sleep(200);
 	}
 
-	// taskbaricon (keep code after reading config)
+	// taskbar icon
 	if (this->MinimizeToSysTray) {
 		if (!this->ShowTempIcon) {
 			this->pTaskbarIcon = new TASKBARICON(this->hwndDialog, 10, "TPFanControl");
