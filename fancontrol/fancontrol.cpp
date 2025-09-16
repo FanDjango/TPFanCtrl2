@@ -272,12 +272,10 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 
 	// taskbar icon
 	if (this->MinimizeToSysTray) {
-		if (!this->ShowTempIcon) {
-			this->pTaskbarIcon = new TASKBARICON(this->hwndDialog, 10, "TPFanControl");
-		}
-		else {
+		if (this->ShowTempIcon)
 			this->pTaskbarIcon = NULL;
-		}
+		else
+			this->pTaskbarIcon = new TASKBARICON(this->hwndDialog, 10, "TPFanControl");
 	}
 
 	// read current fan control status and set mode buttons accordingly
