@@ -239,12 +239,10 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	int tickCount = GetTickCount(); // +262144;
 
 	sprintf_s(bufsec, sizeof(bufsec), "Windows uptime since boot %d sec., SecWinUptime= %d sec.", tickCount / 1000, SecWinUptime);
-
 	this->Trace(bufsec);
 
 	if ((tickCount / 1000) <= SecWinUptime) {
-		sprintf_s(bufsec, sizeof(bufsec), "Save the icon by a start delay of %d seconds (SecStartDelay)", SecStartDelay);
-
+		sprintf_s(bufsec, sizeof(bufsec), "Delay startup to allow windows to settle, SecStartDelay= %d sec.", SecStartDelay);
 		this->Trace(bufsec);
 
 		if (!NoWaitMessage) {
