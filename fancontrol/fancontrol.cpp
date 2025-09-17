@@ -1068,7 +1068,7 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 					this->isLidClosed = true;
 					this->previousModeBeforeLidClose = this->CurrentMode;
 					this->Trace("Lid close detected");
-					if (this->LidClosedMode == 0) {
+					if (this->LidClosedMode == 3) {
 						this->ModeToDialog(3);
 						ok = this->SetFan("Switched to manual mode and turned fans off", 0x00);
 						if (ok)	::Sleep(1000);
