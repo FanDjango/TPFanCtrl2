@@ -815,51 +815,51 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 			//send to client
 			lbResult = bResult;
 			bResult = WriteFile(
-				hPipe0,                // handle to pipe
+				hPipe0,               // handle to pipe
 				szBuffer,             // buffer to write from
-				strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
+				strlen(szBuffer) + 1, // number of bytes to write, include the NULL
 				&cbBytes,             // number of bytes written
 				NULL);                // not overlapped I/O
 			bResult = WriteFile(
-				hPipe1,                // handle to pipe
+				hPipe1,               // handle to pipe
 				szBuffer,             // buffer to write from
-				strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
+				strlen(szBuffer) + 1, // number of bytes to write, include the NULL
 				&cbBytes,             // number of bytes written
 				NULL);                // not overlapped I/O
 			bResult = WriteFile(
-				hPipe2,                // handle to pipe
+				hPipe2,               // handle to pipe
 				szBuffer,             // buffer to write from
-				strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
+				strlen(szBuffer) + 1, // number of bytes to write, include the NULL
 				&cbBytes,             // number of bytes written
 				NULL);                // not overlapped I/O
 			bResult = WriteFile(
-				hPipe3,                // handle to pipe
+				hPipe3,               // handle to pipe
 				szBuffer,             // buffer to write from
-				strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
+				strlen(szBuffer) + 1, // number of bytes to write, include the NULL
 				&cbBytes,             // number of bytes written
 				NULL);                // not overlapped I/O
 			bResult = WriteFile(
-				hPipe4,                // handle to pipe
+				hPipe4,               // handle to pipe
 				szBuffer,             // buffer to write from
-				strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
+				strlen(szBuffer) + 1, // number of bytes to write, include the NULL
 				&cbBytes,             // number of bytes written
 				NULL);                // not overlapped I/O
 			bResult = WriteFile(
-				hPipe5,                // handle to pipe
+				hPipe5,               // handle to pipe
 				szBuffer,             // buffer to write from
-				strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
+				strlen(szBuffer) + 1, // number of bytes to write, include the NULL
 				&cbBytes,             // number of bytes written
 				NULL);                // not overlapped I/O
 			bResult = WriteFile(
-				hPipe6,                // handle to pipe
+				hPipe6,               // handle to pipe
 				szBuffer,             // buffer to write from
-				strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
+				strlen(szBuffer) + 1, // number of bytes to write, include the NULL
 				&cbBytes,             // number of bytes written
 				NULL);                // not overlapped I/O
 			bResult = WriteFile(
-				hPipe7,                // handle to pipe
+				hPipe7,               // handle to pipe
 				szBuffer,             // buffer to write from
-				strlen(szBuffer) + 1,   // number of bytes to write, include the NULL
+				strlen(szBuffer) + 1, // number of bytes to write, include the NULL
 				&cbBytes,             // number of bytes written
 				NULL);                // not overlapped I/O
 
@@ -880,7 +880,7 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 		}
 
 		if (this->ShowTempIcon == 1)
-			this->ProcessTextIcons();  //icon Einstieg
+			this->ProcessTextIcons();
 		else
 			this->RemoveTextIcons();
 
@@ -962,12 +962,7 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 				case 5003: // smart1
 					this->ModeToDialog(2);
 					if (this->IndSmartLevel == 1) {
-						sprintf_s(obuf
-							+
-							strlen(obuf),
-							sizeof(obuf) -
-							strlen(obuf),
-							"Activation of Fan Control Profile 'Smart Mode 1'");
+						sprintf_s(obuf + strlen(obuf), sizeof(obuf) - strlen(obuf), "Activation of Fan Control Profile 'Smart Mode 1'");
 						this->Trace(obuf);
 					}
 					this->IndSmartLevel = 0;
@@ -1105,9 +1100,8 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 		if (!this->Runs_as_service) {
 			// End program
 			// Wait for the work thread to terminate
-			if (this->hThread) {
+			if (this->hThread)
 				::WaitForSingleObject(this->hThread, INFINITE);
-			}
 			if (!this->EcAccess.Lock(100)) {
 				// Something is going on, let's do this later
 				this->Trace("Delaying close");
@@ -1300,7 +1294,6 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 			else
 				m.DeleteMenuItem(5030);
 
-
 			if (this->ShowTempIcon == 0)
 				m.DeleteMenuItem(5070);
 			else
@@ -1340,69 +1333,64 @@ TCHAR myszTip[64];
 
 void FANCONTROL::ProcessTextIcons(void) {
 	oldicon = icon;
-	if (this->CurrentModeFromDialog() == 1) {
+	if (this->CurrentModeFromDialog() == 1)
 		icon = 10;    // gray
-	}
 	else {
 		icon = 11;    // blue
 		for (int i = 0; i < ARRAYMAX(this->IconLevels); i++) {
-			if (this->MaxTemp >= this->IconLevels[i]) {
+			if (this->MaxTemp >= this->IconLevels[i])
 				icon = 12 + i;    // yellow, orange, red
-			}
 		}
 	}
 
 	if (this->IconColorFan) {
 		switch (fan1speed / 1000) {
-		case 0:
-			break;
-		case 1:
-			icon = 21; //sehr hell grün
-			break;
-		case 2:
-			icon = 22; //hell grün
-			break;
-		case 3:
-			icon = 23; //grün
-			break;
-		case 4:
-			icon = 24; //dunkel grün
-			break;
-		case 5:
-			icon = 25; //sehr dunkel grün
-			break;
-		case 6:
-			icon = 25; //sehr dunkel grün
-			break;
-		case 7:
-			icon = 25; //sehr dunkel grün
-			break;
-		case 8:
-			icon = 25; //sehr dunkel grün
-			break;
-		default:
-			icon = oldicon;
-			break;
+			case 0:
+				break;
+			case 1:
+				icon = 21; //sehr hell grün
+				break;
+			case 2:
+				icon = 22; //hell grün
+				break;
+			case 3:
+				icon = 23; //grün
+				break;
+			case 4:
+				icon = 24; //dunkel grün
+				break;
+			case 5:
+				icon = 25; //sehr dunkel grün
+				break;
+			case 6:
+				icon = 25; //sehr dunkel grün
+				break;
+			case 7:
+				icon = 25; //sehr dunkel grün
+				break;
+			case 8:
+				icon = 25; //sehr dunkel grün
+				break;
+			default:
+				icon = oldicon;
+				break;
 		};
 	}
-
 
 	this->iFarbeIconB = icon;
 
 	lstrcpyn(myszTip, this->Title2, sizeof(myszTip) - 1);
 
 	if (pTextIconMutex->Lock(100)) {
-		//INIT ppTbTextIcon
+		//init ppTbTextIcon
 		if (!ppTbTextIcon || this->TaskbarNew) {
 			this->TaskbarNew = 0;
 			ppTbTextIcon = new CTaskbarTextIcon * [MAX_TEXT_ICONS];
-			for (int i = 0; i < MAX_TEXT_ICONS; ++i) {
+			for (int i = 0; i < MAX_TEXT_ICONS; ++i)
 				ppTbTextIcon[i] = NULL;
-			}
 
-			//erstmal nur eins
-
-			ppTbTextIcon[0] = new CTaskbarTextIcon(this->m_hinstapp,
+			ppTbTextIcon[0] = new CTaskbarTextIcon(
+				this->m_hinstapp,
 				this->hwndDialog, WM__TASKBAR, 0, "", "",  //WM_APP+5000 -> WM__TASKBAR
 				this->iFarbeIconB, this->iFontIconB, myszTip);
 
@@ -1436,8 +1424,6 @@ void FANCONTROL::ProcessTextIcons(void) {
 		}
 
 		char str_value[256];
-		//	char buf[256]= "";
-		//  aktualisieren
 		for (int i = 0; i < MAX_TEXT_ICONS; ++i) {
 			if (ppTbTextIcon[i]) {
 				if (Fahrenheit)
