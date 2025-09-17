@@ -28,7 +28,8 @@ DEFINE_GUID(GUID_LIDSWITCH_STATE_CHANGE,
 //  constructor
 //-------------------------------------------------------------------------
 FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
-	: hinstapp(NULL),
+	: 
+	hinstapp(NULL),
 	hwndDialog(NULL),
 	CurrentMode(-1),
 	PreviousMode(-1),
@@ -348,8 +349,7 @@ FANCONTROL::~FANCONTROL() {
 //-------------------------------------------------------------------------
 //  mode integer from mode radio buttons
 //-------------------------------------------------------------------------
-int
-FANCONTROL::CurrentModeFromDialog() {
+int FANCONTROL::CurrentModeFromDialog() {
 	BOOL modetpauto = ::SendDlgItemMessage(this->hwndDialog, 8300, BM_GETCHECK, 0L, 0L),
 		modefcauto = ::SendDlgItemMessage(this->hwndDialog, 8301, BM_GETCHECK, 0L, 0L),
 		modemanual = ::SendDlgItemMessage(this->hwndDialog, 8302, BM_GETCHECK, 0L, 0L);
@@ -366,8 +366,7 @@ FANCONTROL::CurrentModeFromDialog() {
 	return this->CurrentMode;
 }
 
-int
-FANCONTROL::ShowAllFromDialog() {
+int FANCONTROL::ShowAllFromDialog() {
 	BOOL modefcauto = ::SendDlgItemMessage(this->hwndDialog, 7001, BM_GETCHECK, 0L, 0L),
 		modemanual = ::SendDlgItemMessage(this->hwndDialog, 7002, BM_GETCHECK, 0L, 0L);
 
@@ -381,15 +380,13 @@ FANCONTROL::ShowAllFromDialog() {
 	return this->ShowAll;
 }
 
-void
-FANCONTROL::ModeToDialog(int mode) {
+void FANCONTROL::ModeToDialog(int mode) {
 	::SendDlgItemMessage(this->hwndDialog, 8300, BM_SETCHECK, mode == 1, 0L);
 	::SendDlgItemMessage(this->hwndDialog, 8301, BM_SETCHECK, mode == 2, 0L);
 	::SendDlgItemMessage(this->hwndDialog, 8302, BM_SETCHECK, mode == 3, 0L);
 }
 
-void
-FANCONTROL::ShowAllToDialog(int show) {
+void FANCONTROL::ShowAllToDialog(int show) {
 	::SendDlgItemMessage(this->hwndDialog, 7001, BM_SETCHECK, show == 1, 0L);
 	::SendDlgItemMessage(this->hwndDialog, 7002, BM_SETCHECK, show == 0, 0L);
 }
@@ -428,20 +425,12 @@ int FANCONTROL::ProcessDialog() {
 //-------------------------------------------------------------------------
 //  dialog window procedure (map to class method)
 //-------------------------------------------------------------------------
-ULONG CALLBACK
-FANCONTROL::BaseDlgProc(HWND
-	hwnd,
-	ULONG msg, WPARAM
-	mp1,
-	LPARAM mp2
-)
-{
+ULONG CALLBACK FANCONTROL::BaseDlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 	ULONG rc = FALSE;
 
 	static UINT s_TaskbarCreated;
 
-	if (msg == WM_INITDIALOG)
-	{
+	if (msg == WM_INITDIALOG) {
 		s_TaskbarCreated = RegisterWindowMessage("TaskbarCreated");
 	}
 
@@ -480,14 +469,7 @@ int IconFontSize;
 BOOL _piscreated(FALSE);
 char obuftd[256] = "", obuftd2[128] = "", templisttd[512];
 char obuf[256] = "", obuf2[128] = "", templist2[512];
-ULONG
-FANCONTROL::DlgProc(HWND
-	hwnd,
-	ULONG msg, WPARAM
-	mp1,
-	LPARAM mp2
-)
-{
+ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 	ULONG rc = 0, ok, res;
 	char buf[1024];
 
@@ -1342,8 +1324,7 @@ FANCONTROL::DlgProc(HWND
 //-------------------------------------------------------------------------
 //  reading the EC status may take a while, hence do it in a thread
 //-------------------------------------------------------------------------
-int
-FANCONTROL::WorkThread() {
+int FANCONTROL::WorkThread() {
 	int ok = this->ReadEcStatus(&this->State);
 
 	::PostMessage(this->hwndDialog, WM__NEWDATA, ok, 0);
