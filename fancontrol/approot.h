@@ -26,14 +26,9 @@ DWORD InstallService(bool quiet);
 
 DWORD UninstallService(bool quiet);
 
-VOID WINAPI
-Handler(DWORD
-	fdwControl);
-VOID WINAPI
-ServiceMain(DWORD
-	aArgc,
-	LPTSTR* aArgv
-);
+VOID WINAPI Handler(DWORD fdwControl);
+
+VOID WINAPI ServiceMain(DWORD aArgc, LPTSTR* aArgv);
 
 void StartWorkerThread();
 

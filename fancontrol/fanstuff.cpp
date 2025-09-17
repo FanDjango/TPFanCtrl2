@@ -105,7 +105,7 @@ FANCONTROL::HandleData(void) {
 		else {
 			if (!(SlimDialog && StayOnTop))
 				sprintf_s(obuf2 + strlen(obuf2), sizeof(obuf2) - strlen(obuf2), " Non Bios");
-			sprintf_s(title2 + strlen(title2), sizeof(title2) - strlen(title2), " Fan %d (%s)",	fanctrl & 0x3F,	this->CurrentModeFromDialog() == 2 ? "Smart" : "Fixed");
+			sprintf_s(title2 + strlen(title2), sizeof(title2) - strlen(title2), " Fan %d (%s)", fanctrl & 0x3F, this->CurrentModeFromDialog() == 2 ? "Smart" : "Fixed");
 		}
 	}
 	else {
@@ -116,7 +116,7 @@ FANCONTROL::HandleData(void) {
 		}
 		else {
 			sprintf_s(obuf2 + strlen(obuf2), sizeof(obuf2) - strlen(obuf2), "Fan Level %d, Non Bios)", fanctrl & 0x3F);
-			sprintf_s(title2 + strlen(title2), sizeof(title2) - strlen(title2), " Fan %d (%s)",	fanctrl & 0x3F,	this->CurrentModeFromDialog() == 2 ? "Smart" : "Fixed");
+			sprintf_s(title2 + strlen(title2), sizeof(title2) - strlen(title2), " Fan %d (%s)", fanctrl & 0x3F, this->CurrentModeFromDialog() == 2 ? "Smart" : "Fixed");
 		}
 	}
 
@@ -217,7 +217,7 @@ FANCONTROL::HandleData(void) {
 	if (Fahrenheit)
 		sprintf_s(CurrentStatus, sizeof(CurrentStatus), "Fan: 0x%02x / Switch: %d° F (%s)", State.FanCtrl, MaxTemp * 9 / 5 + 32, templist);
 	else
-		sprintf_s(CurrentStatus, sizeof(CurrentStatus), "Fan: 0x%02x / Switch: %d° C (%s)", State.FanCtrl, MaxTemp,	templist);
+		sprintf_s(CurrentStatus, sizeof(CurrentStatus), "Fan: 0x%02x / Switch: %d° C (%s)", State.FanCtrl, MaxTemp, templist);
 
 	// display fan speed
 
@@ -335,14 +335,14 @@ FANCONTROL::SmartControl(void) {
 		this->Trace(obuf);
 	}
 
-//i         Temp Fan Hup Hdown 
-//0 Level = 50   0   0   0 
-//1 Level = 60   1   0   5 <--- means, when going down switch to this level at 55
-//2 Level = 70   2   0   0 
-//3 Level = 80   4   5   0 <--- means, when going up, switch this level at 85
-//4 Level = 90   7   0   0 
-//5 Level = 95   64  0   0 
-//6 Level = 105 128  0   0 
+	//i         Temp Fan Hup Hdown 
+	//0 Level = 50   0   0   0 
+	//1 Level = 60   1   0   5 <--- means, when going down switch to this level at 55
+	//2 Level = 70   2   0   0 
+	//3 Level = 80   4   5   0 <--- means, when going up, switch this level at 85
+	//4 Level = 90   7   0   0 
+	//5 Level = 95   64  0   0 
+	//6 Level = 105 128  0   0 
 
 	newfanctrl = -1;
 
@@ -374,7 +374,7 @@ FANCONTROL::SmartControl(void) {
 	// fan speed ramp up or down?
 	if (newfanctrl != -1 && newfanctrl != this->State.FanCtrl) {
 		//if (newfanctrl == 0x80) {  
-		    // switch to BIOS-auto mode
+			// switch to BIOS-auto mode
 		//	this->ModeToDialog(1);    
 		//}
 
@@ -396,7 +396,7 @@ FANCONTROL::SmartControl(void) {
 				return; // rising 
 		}
 
-		this->LastSmartLevel = levelIndex; 
+		this->LastSmartLevel = levelIndex;
 		this->SetFan("Smart", newfanctrl);
 	}
 
@@ -560,7 +560,7 @@ FANCONTROL::SetHdw(const char* source, int hdwctrl, int HdwOffset, int AnyWayBit
 //-------------------------------------------------------------------------
 bool
 FANCONTROL::SampleMatch(FCSTATE* smp1, FCSTATE* smp2) {
-	
+
 	// match for identical fanctrl settings
 	if (smp1->FanCtrl != smp2->FanCtrl) return false;
 
@@ -664,7 +664,7 @@ FANCONTROL::ReadEcRaw(FCSTATE* pfcstate) {
 		this->Trace("failed to read FanSpeedLowByte 2 from EC");
 		return false;
 	}
-	
+
 	// Hi
 	if (!ReadByteFromEC(TP_ECOFFSET_FANSPEED + 1, &pfcstate->Fan2SpeedHi)) {
 		this->Trace("failed to read FanSpeedHighByte 2 from EC");
@@ -684,7 +684,7 @@ FANCONTROL::ReadEcRaw(FCSTATE* pfcstate) {
 		this->Trace("failed to read FanSpeedLowByte 1 from EC");
 		return false;
 	}
-	
+
 	// Hi
 	if (!ReadByteFromEC(TP_ECOFFSET_FANSPEED + 1, &pfcstate->Fan1SpeedHi)) {
 		this->Trace("failed to read FanSpeedHighByte 1 from EC");
@@ -698,7 +698,7 @@ FANCONTROL::ReadEcRaw(FCSTATE* pfcstate) {
 	memset(pfcstate->Sensors, 0, sizeof(pfcstate->Sensors));
 
 	if (!this->UseTWR) {
-		
+
 		idxtemp = 0;
 
 		for (i = 0; i < 8; i++) {    // temp sensors 0x78 - 0x7f
