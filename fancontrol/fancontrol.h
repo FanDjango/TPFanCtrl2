@@ -189,9 +189,9 @@ protected:
 
 	int ShowAllFromDialog();
 
-	void ModeToDialog(int mode);
+	void ModeToDialog(int mode) const;
 
-	void ShowAllToDialog(int mode);
+	void ShowAllToDialog(int mode) const;
 
 	ULONG DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2);
 
@@ -272,7 +272,7 @@ public:
 
 	~FANCONTROL();
 
-	int ProcessDialog();
+	int ProcessDialog() const;
 
 	HWND GetDialogWnd() { return hwndDialog; }
 

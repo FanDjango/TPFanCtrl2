@@ -380,13 +380,13 @@ int FANCONTROL::ShowAllFromDialog() {
 	return this->ShowAll;
 }
 
-void FANCONTROL::ModeToDialog(int mode) {
+void FANCONTROL::ModeToDialog(int mode) const {
 	::SendDlgItemMessage(this->hwndDialog, 8300, BM_SETCHECK, mode == 1, 0L);
 	::SendDlgItemMessage(this->hwndDialog, 8301, BM_SETCHECK, mode == 2, 0L);
 	::SendDlgItemMessage(this->hwndDialog, 8302, BM_SETCHECK, mode == 3, 0L);
 }
 
-void FANCONTROL::ShowAllToDialog(int show) {
+void FANCONTROL::ShowAllToDialog(int show) const {
 	::SendDlgItemMessage(this->hwndDialog, 7001, BM_SETCHECK, show == 1, 0L);
 	::SendDlgItemMessage(this->hwndDialog, 7002, BM_SETCHECK, show == 0, 0L);
 }
@@ -394,7 +394,7 @@ void FANCONTROL::ShowAllToDialog(int show) {
 //-------------------------------------------------------------------------
 //  process main dialog
 //-------------------------------------------------------------------------
-int FANCONTROL::ProcessDialog() {
+int FANCONTROL::ProcessDialog() const {
 
 	MSG qmsg, qmsg2;
 	int dlgrc = -1;
@@ -456,7 +456,7 @@ ULONG CALLBACK FANCONTROL::BaseDlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM 
 //-------------------------------------------------------------------------
 //  dialog window procedure as class method
 //-------------------------------------------------------------------------
-#define WANTED_MEM_SIZE 65536*12
+constexpr auto WANTED_MEM_SIZE = 65536*12;
 BOOL dioicon(TRUE);
 char szBuffer[BUFFER_SIZE];
 char str_value[256];
