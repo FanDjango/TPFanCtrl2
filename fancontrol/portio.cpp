@@ -45,7 +45,6 @@ constexpr int DEFAULT_TIMEOUT_MS = 1000;
 //--------------------------------------------------------------------------
 // wait for the desired status from the embedded controller (EC) via port io 
 //--------------------------------------------------------------------------
-// 'onoff' is now a bool, and return value is bool
 static bool
 WaitForFlags(USHORT port, char flags, bool onoff = false, int timeout = DEFAULT_TIMEOUT_MS) {
     int time = 0;
