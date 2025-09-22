@@ -20,23 +20,26 @@
 #include "tools.h"
 #include "TVicPort.h"
 
-#define TP_ECOFFSET_FAN         (char)0x2F    // 1 byte (binary xyzz zzz)
-#define TP_ECOFFSET_FANSPEED    (char)0x84    // 16 bit word, lo/hi byte
-#define TP_ECOFFSET_TEMP0       (char)0x78    // 8 temp sensor bytes from here
-#define TP_ECOFFSET_TEMP1       (char)0xC0    // 4 temp sensor bytes from here
-#define TP_ECOFFSET_FAN_SWITCH  (char)0x31
-#define TP_ECVALUE_SELFAN1      (char)0x0000
-#define TP_ECVALUE_SELFAN2      (char)0x0001
+constexpr auto TP_ECOFFSET_FAN		  = (char)0x2F;    // 1 byte (binary xyzz zzz);
+constexpr auto TP_ECOFFSET_FANSPEED	  = (char)0x84;    // 16 bit word, lo/hi byte;
+constexpr auto TP_ECOFFSET_TEMP0	  = (char)0x78;	 // 8 temp sensor bytes from here;
+constexpr auto TP_ECOFFSET_TEMP1	  = (char)0xC0;	 // 4 temp sensor bytes from here;
+constexpr auto TP_ECOFFSET_FAN_SWITCH = (char)0x31;
+constexpr auto TP_ECVALUE_SELFAN1	  = (char)0x0000;
+constexpr auto TP_ECVALUE_SELFAN2	  = (char)0x0001;
 
 //-------------------------------------------------------------------------
 //  switch fan according to settings
 //-------------------------------------------------------------------------
-int
-FANCONTROL::HandleData(void) {
-	char obuf[256] = "", obuf2[128] = "",
-		templist[256] = "", templist2[512],
-		manlevel[16] = "", title2[128] = "";
-	int i, maxtemp, imaxtemp, ok = 0;
+bool FANCONTROL::HandleData(void) {
+	char obuf[256] = "",
+		 obuf2[128] = "",
+		 templist[256] = "",
+		 templist2[512],
+		 manlevel[16] = "",
+		 title2[128] = "";
+	int i, maxtemp, imaxtemp;
+	bool ok = 0;
 
 	//
 	// determine highest temp.
@@ -313,13 +316,9 @@ FANCONTROL::HandleData(void) {
 //-------------------------------------------------------------------------
 //  smart fan control depending on temperature
 //-------------------------------------------------------------------------
-void
-FANCONTROL::SmartControl(void) {
-	int i,
-		newfanctrl = -1,
-		levelIndex = -1,
-		fanctrl = this->State.FanCtrl;
+void FANCONTROL::SmartControl(void) {
 	char obuf[256] = "";
+	int i, newfanctrl = -1, levelIndex = -1, fanctrl = this->State.FanCtrl;
 
 	if (this->PreviousMode == 1) {
 		sprintf_s(obuf + strlen(obuf), sizeof(obuf) - strlen(obuf), "Change Mode from BIOS->");
@@ -406,12 +405,11 @@ FANCONTROL::SmartControl(void) {
 //-------------------------------------------------------------------------
 //  set fan state via EC
 //-------------------------------------------------------------------------
-int
-FANCONTROL::SetFan(const char* source, int fanctrl, bool final) {
-	int ok = 0;
-	int fan1_ok = 0;
-	int fan2_ok = 0;
-	char obuf[256] = "", obuf2[256], datebuf[128];
+bool FANCONTROL::SetFan(const char* source, int fanctrl, bool final) {
+	char obuf[256] = "",
+		 obuf2[256],
+		 datebuf[128];
+	int ok = 0,	fan1_ok = 0, fan2_ok = 0;
 
 	if (this->FanBeepFreq && this->FanBeepDura)
 		::Beep(this->FanBeepFreq, this->FanBeepDura);
@@ -501,11 +499,12 @@ FANCONTROL::SetFan(const char* source, int fanctrl, bool final) {
 	return ok;
 }
 
-BOOL
-FANCONTROL::SetHdw(const char* source, int hdwctrl, int HdwOffset, int AnyWayBit) {
+bool FANCONTROL::SetHdw(const char* source, int hdwctrl, int HdwOffset, int AnyWayBit) {
+	char obuf[256] = "",
+		 obuf2[256],
+		 datebuf[128],
+		 newhdwctrl;
 	int ok = 0;
-	char obuf[256] = "", obuf2[256], datebuf[128];
-	char newhdwctrl;
 
 	if (!this->LockECAccess()) return false;
 
@@ -558,8 +557,7 @@ FANCONTROL::SetHdw(const char* source, int hdwctrl, int HdwOffset, int AnyWayBit
 //-------------------------------------------------------------------------
 //  check two EC status samples for accpetable equivalence
 //-------------------------------------------------------------------------
-bool
-FANCONTROL::SampleMatch(FCSTATE* smp1, FCSTATE* smp2) {
+bool FANCONTROL::SampleMatch(FCSTATE* smp1, FCSTATE* smp2) {
 
 	// match for identical fanctrl settings
 	if (smp1->FanCtrl != smp2->FanCtrl) return false;
@@ -571,42 +569,38 @@ FANCONTROL::SampleMatch(FCSTATE* smp1, FCSTATE* smp2) {
 	//
 	// -----------------------
 
-	return TRUE;
+	return true;
 }
 
 //-------------------------------------------------------------------------
 //  lock access to the EC controller
 //-------------------------------------------------------------------------
-bool
-FANCONTROL::LockECAccess() {
-	int numTries = 10, sleepTicks = 100;
+bool FANCONTROL::LockECAccess() {
+	int numTries = 10, sleepTicks = 100, ok_ecaccess = false;
 
-	int ok_ecaccess = false;
 	for (int i = 0; i < numTries; i++) {
 		if (ok_ecaccess = this->EcAccess.Lock(100))	return TRUE;
 		if (i < numTries) ::Sleep(sleepTicks);
 	}
 
 	this->Trace("Could not acquire mutex to read EC status");
+
 	return false;
 }
 
 //-------------------------------------------------------------------------
 //  relinquisch any lock access to the EC controller
 //-------------------------------------------------------------------------
-void
-FANCONTROL::FreeECAccess() {
+void FANCONTROL::FreeECAccess() {
 	this->EcAccess.Unlock();
 }
 
 //-------------------------------------------------------------------------
 //  read fan and temperatures from embedded controller
 //-------------------------------------------------------------------------
-bool
-FANCONTROL::ReadEcStatus(FCSTATE* pfcstate) {
-	int numTries = 10, sleepTicks = 200;
-
+bool FANCONTROL::ReadEcStatus(FCSTATE* pfcstate) {
 	FCSTATE sample1, sample2;
+	int numTries = 10, sleepTicks = 200;
 
 	if (!this->LockECAccess()) return false;
 
@@ -634,8 +628,7 @@ FANCONTROL::ReadEcStatus(FCSTATE* pfcstate) {
 //-------------------------------------------------------------------------
 //  read fan and temperatures from embedded controller
 //-------------------------------------------------------------------------
-bool
-FANCONTROL::ReadEcRaw(FCSTATE* pfcstate) {
+bool FANCONTROL::ReadEcRaw(FCSTATE* pfcstate) {
 
 	// At any point in time, a failure in "ReadByteFromEC" or "WriteByteToEC"
 	// is a reason to abort the entire process and return "false" to indicate failure.
@@ -741,7 +734,7 @@ FANCONTROL::ReadEcRaw(FCSTATE* pfcstate) {
 	}
 	else {
 		char data = -1;
-		char dataOut[16];
+		char dataOut[16] = { };
 		int iOK = false;
 		int iTimeout = 100;
 		int iTimeoutBuf = 1000;

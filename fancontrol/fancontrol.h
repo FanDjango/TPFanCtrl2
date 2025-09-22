@@ -22,11 +22,13 @@
 
 #pragma once
 
-
 #include "winstuff.h"
 #include "TaskbarTextIcon.h"
 
-#define FANCONTROLVERSION "2.3.6 Dual Fan"
+constexpr const char* FANCONTROLVERSION = "2.3.6 Dual Fan";
+
+//Pipe name format - \\.\pipe\pipename
+#define g_szPipeName "\\\\.\\Pipe\\TPFanControl01"  //Name given to the pipe
 
 #define WM__DISMISSDLG WM_USER+5
 #define WM__GETDATA WM_USER+6
@@ -37,13 +39,8 @@
 #define ARRAYMAX(tab) (sizeof(tab)/sizeof((tab)[0]))
 #define NULLSTRUCT    { 0, }
 
-//begin named pipe TPFanControl01
-#define g_szPipeName "\\\\.\\Pipe\\TPFanControl01"  //Name given to the pipe
-//Pipe name format - \\.\pipe\pipename
-
-#define BUFFER_SIZE 1024 //1k
-#define ACK_MESG_RECV "Message received successfully"
-//end named pipe TPFanControl01
+constexpr auto BUFFER_SIZE = 1024; // 1k
+constexpr auto ACK_MESG_RECV = "Message received successfully";
 
 class FANCONTROL {
 protected:
@@ -227,13 +224,13 @@ protected:
 
 	bool ReadEcRaw(FCSTATE* pfcstate);
 
-	int HandleData();
+	bool HandleData();
 
 	void SmartControl();
 
-	int SetFan(const char* source, int level, bool final = false);
+	bool SetFan(const char* source, int level, bool final = false);
 
-	int SetHdw(const char* source, int hdwctrl, int HdwOffset, int AnyWayBit);
+	bool SetHdw(const char* source, int hdwctrl, int HdwOffset, int AnyWayBit);
 
 	HPOWERNOTIFY hPowerNotify;
 
@@ -274,9 +271,9 @@ public:
 
 	int ProcessDialog() const;
 
-	HWND GetDialogWnd() { return hwndDialog; }
+	HWND GetDialogWnd() const { return hwndDialog; }
 
-	HANDLE GetWorkThread() { return hThread; }
+	HANDLE GetWorkThread() const { return hThread; }
 
 	// The texticons will be shown depending on variables
 	void ProcessTextIcons(void);

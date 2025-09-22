@@ -204,7 +204,8 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 
 	if (this->hwndDialog) {
 		::GetWindowText(this->hwndDialog, this->Title, sizeof(this->Title));
-		strcat_s(this->Title, sizeof(this->Title), " V" FANCONTROLVERSION);
+		strcat_s(this->Title, sizeof(this->Title), " V");
+		strcat_s(this->Title, sizeof(this->Title), FANCONTROLVERSION);
 		::SetWindowText(this->hwndDialog, this->Title);
 
 		::SetWindowLong(this->hwndDialog, GWL_USERDATA, (ULONG)this);
@@ -1379,7 +1380,9 @@ void FANCONTROL::ProcessTextIcons(void) {
 
 	this->iFarbeIconB = icon;
 
-	lstrcpyn(myszTip, this->Title2, sizeof(myszTip) - 1);
+	if (lstrcpyn(myszTip, this->Title2, sizeof(myszTip) - 1) == NULL) {
+		myszTip[0] = '\0';
+	}
 
 	if (pTextIconMutex->Lock(100)) {
 		//init ppTbTextIcon
