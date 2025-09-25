@@ -299,18 +299,8 @@ FANCONTROL::ReadConfig(const char* configfile)
 				continue;
 			}
 
-			if (_strnicmp(buf, "Log2File=", 9) == 0) {
-				this->Log2File = atoi(buf + 9);
-				continue;
-			}
-
 			if (_strnicmp(buf, "StayOnTop=", 10) == 0) {
 				this->StayOnTop = atoi(buf + 10);
-				continue;
-			}
-
-			if (_strnicmp(buf, "Log2csv=", 8) == 0) {
-				this->Log2csv = atoi(buf + 8);
 				continue;
 			}
 
@@ -321,6 +311,16 @@ FANCONTROL::ReadConfig(const char* configfile)
 
 			if (_strnicmp(buf, "ShowTempIcon=", 8) == 0) {
 				this->ShowTempIcon = atoi(buf + 13);
+				continue;
+			}
+
+			if (_strnicmp(buf, "Log2File=", 9) == 0) {
+				this->Log2File = atoi(buf + 9);
+				continue;
+			}
+
+			if (_strnicmp(buf, "Log2csv=", 8) == 0) {
+				this->Log2csv = atoi(buf + 8);
 				continue;
 			}
 
