@@ -1080,7 +1080,7 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 						if (ok)	::Sleep(1000);
 					}
 					else {
-						this->Trace("Continuing operation with lid closed");
+						this->Trace("Continuing auto mode with lid closed");
 					}
 				}
 				else { // Lid opened

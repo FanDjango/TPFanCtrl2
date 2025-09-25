@@ -291,6 +291,9 @@ FANCONTROL::ReadConfig(const char* configfile)
 				continue;
 			}
 
+			// 1 -> Switch to BIOS mode with lid closed
+			// 2 -> Continue auto mode with lid closed
+			// 3 -> Switch to manual mode and turn fans off
 			if (_strnicmp(buf, "LidClosedMode=", 14) == 0) {
 				this->LidClosedMode = atoi(buf + 14);
 				continue;
