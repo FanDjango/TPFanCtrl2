@@ -241,7 +241,7 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	// If you need to use this feature, take note of the following caveat:
 	// If the windows fast start feature is turned on, the system uptime
 	// WILL NOT BE RESET ON POWER ON, thus making this logic fail. Turn this
-	// feature off make this work.
+	// feature off to make this work.
 	DWORD tickCount = GetTickCount();
 
 	char bufsec[1024] = "";
