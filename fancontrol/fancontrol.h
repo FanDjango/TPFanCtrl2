@@ -25,7 +25,7 @@
 #include "winstuff.h"
 #include "TaskbarTextIcon.h"
 
-constexpr const char* FANCONTROLVERSION = "2.3.7 Dual Fan";
+constexpr const char* FANCONTROLVERSION = "2.3.7 Dual/Single Fan";
 
 //Pipe name format - \\.\pipe\pipename
 #define g_szPipeName "\\\\.\\Pipe\\TPFanControl01"  //Name given to the pipe
@@ -102,6 +102,7 @@ protected:
 	int NoExtSensor;
 	int FanSpeedLowByte;
 	int ActiveMode,
+		SingleFan = false,
 		UseTWR,
 		ManFanSpeed,
 		FinalSeen;

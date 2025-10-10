@@ -62,6 +62,11 @@ FANCONTROL::ReadConfig(const char* configfile)
 			if (buf[0] == '/' || buf[0] == '#' || buf[0] == ';')
 				continue;
 
+			if (_strnicmp(buf, "SingleFan=", 10) == 0) {
+				this->SingleFan = atoi(buf + 10);
+				continue;
+			}
+
 			if (_strnicmp(buf, "UseTWR=", 7) == 0) {
 				this->UseTWR = atoi(buf + 7);
 				continue;

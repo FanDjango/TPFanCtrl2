@@ -427,29 +427,26 @@ bool FANCONTROL::SetFan(const char* source, int fanctrl, bool final) {
 		if (!this->LockECAccess()) return false;
 
 		for (int i = 0; i < 5; i++) {
-			// set new fan level
+			// set new fan1 level
 			ok = this->WriteByteToEC(TP_ECOFFSET_FAN_SWITCH, TP_ECVALUE_SELFAN1);
 			ok = this->WriteByteToEC(TP_ECOFFSET_FAN, fanctrl);
-
 			::Sleep(100);
-
-			ok = this->WriteByteToEC(TP_ECOFFSET_FAN_SWITCH, TP_ECVALUE_SELFAN2);
-			ok = this->WriteByteToEC(TP_ECOFFSET_FAN, fanctrl);
-
-			::Sleep(100);
-
-			// verify completion of fan2
-			fan2_ok = this->ReadByteFromEC(TP_ECOFFSET_FAN, &this->State.FanCtrl);
-
-			::Sleep(100);
-
 			// verify completion of fan1
-			ok = this->WriteByteToEC(TP_ECOFFSET_FAN_SWITCH, TP_ECVALUE_SELFAN1);
-			//ok = this->WriteByteToEC(TP_ECOFFSET_FAN, fanctrl);
-
+			fan1_ok = this->ReadByteFromEC(TP_ECOFFSET_FAN, &this->State.FanCtrl);
 			::Sleep(100);
 
-			fan1_ok = this->ReadByteFromEC(TP_ECOFFSET_FAN, &this->State.FanCtrl);
+			if (!SingleFan) {
+				// set new fan1 level
+				ok = this->WriteByteToEC(TP_ECOFFSET_FAN_SWITCH, TP_ECVALUE_SELFAN2);
+				ok = this->WriteByteToEC(TP_ECOFFSET_FAN, fanctrl);
+				::Sleep(100);
+				// verify completion of fan2
+				fan2_ok = this->ReadByteFromEC(TP_ECOFFSET_FAN, &this->State.FanCtrl);
+				::Sleep(100);
+			}
+			else {
+				fan2_ok = true;
+			}
 
 			if (fan1_ok && fan2_ok) {
 				sprintf_s(obuf + strlen(obuf), sizeof(obuf) - strlen(obuf), "[i=%d] ", i);
@@ -643,30 +640,10 @@ bool FANCONTROL::ReadEcRaw(FCSTATE* pfcstate) {
 	}
 
 	//
-	// Fan 2 next
+	// Fan 1 first
 	//
 
 	// Select 
-	if (!WriteByteToEC(TP_ECOFFSET_FAN_SWITCH, TP_ECVALUE_SELFAN2)) {
-		this->Trace("failed to select Fan 2 in EC");
-		return false;
-	}
-
-	// Lo
-	if (!ReadByteFromEC(TP_ECOFFSET_FANSPEED, &pfcstate->Fan2SpeedLo)) {
-		this->Trace("failed to read FanSpeedLowByte 2 from EC");
-		return false;
-	}
-
-	// Hi
-	if (!ReadByteFromEC(TP_ECOFFSET_FANSPEED + 1, &pfcstate->Fan2SpeedHi)) {
-		this->Trace("failed to read FanSpeedHighByte 2 from EC");
-		return false;
-	}
-
-	//
-	// Fan 1 last
-	//
 	if (!WriteByteToEC(TP_ECOFFSET_FAN_SWITCH, TP_ECVALUE_SELFAN1)) {
 		this->Trace("failed to select Fan 1 in EC");
 		return false;
@@ -682,6 +659,32 @@ bool FANCONTROL::ReadEcRaw(FCSTATE* pfcstate) {
 	if (!ReadByteFromEC(TP_ECOFFSET_FANSPEED + 1, &pfcstate->Fan1SpeedHi)) {
 		this->Trace("failed to read FanSpeedHighByte 1 from EC");
 		return false;
+	}
+
+	if (!SingleFan) {
+		//
+		// Fan 2 last
+		//
+		if (!WriteByteToEC(TP_ECOFFSET_FAN_SWITCH, TP_ECVALUE_SELFAN2)) {
+			this->Trace("failed to select Fan 2 in EC");
+			return false;
+		}
+
+		// Lo
+		if (!ReadByteFromEC(TP_ECOFFSET_FANSPEED, &pfcstate->Fan2SpeedLo)) {
+			this->Trace("failed to read FanSpeedLowByte 2 from EC");
+			return false;
+		}
+
+		// Hi
+		if (!ReadByteFromEC(TP_ECOFFSET_FANSPEED + 1, &pfcstate->Fan2SpeedHi)) {
+			this->Trace("failed to read FanSpeedHighByte 2 from EC");
+			return false;
+		}
+	}
+	else {
+		pfcstate->Fan2SpeedLo = pfcstate->Fan1SpeedLo;
+		pfcstate->Fan2SpeedHi = pfcstate->Fan1SpeedHi;
 	}
 
 	// Get Sensors finally
