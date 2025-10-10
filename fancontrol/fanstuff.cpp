@@ -138,7 +138,10 @@ bool FANCONTROL::HandleData(void) {
 	if (this->fan2speed > 0x1fff)
 		fan2speed = lastfan2speed;
 
-	sprintf_s(obuf2, sizeof(obuf2), "%d/%d RPM", this->fan1speed, this->fan2speed);
+	if(SingleFan)
+		sprintf_s(obuf2, sizeof(obuf2), "%d RPM", this->fan1speed);
+	else
+		sprintf_s(obuf2, sizeof(obuf2), "%d/%d RPM", this->fan1speed, this->fan2speed);
 
 	::SetDlgItemText(this->hwndDialog, 8102, obuf2);
 

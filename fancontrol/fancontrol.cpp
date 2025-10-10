@@ -205,7 +205,11 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	if (this->hwndDialog) {
 		::GetWindowText(this->hwndDialog, this->Title, sizeof(this->Title));
 		strcat_s(this->Title, sizeof(this->Title), " V");
-		strcat_s(this->Title, sizeof(this->Title), FANCONTROLVERSION);
+		if (SingleFan)
+			strcat_s(this->Title, sizeof(this->Title), FANCONTROLVERSIONS);
+		else
+			strcat_s(this->Title, sizeof(this->Title), FANCONTROLVERSIOND);
+
 		::SetWindowText(this->hwndDialog, this->Title);
 
 		::SetWindowLong(this->hwndDialog, GWL_USERDATA, (ULONG)this);

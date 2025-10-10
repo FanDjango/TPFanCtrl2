@@ -533,7 +533,10 @@ FANCONTROL::ReadConfig(const char* configfile)
 		ok = true;
 
 		this->Trace("Current Config:");
-		this->Trace(FANCONTROLVERSION);
+		if (SingleFan)
+			this->Trace(FANCONTROLVERSIONS);
+		else
+			this->Trace(FANCONTROLVERSIOND);
 	}
 	else {
 		this->Trace("TPFanControl.ini missing, default values:");
