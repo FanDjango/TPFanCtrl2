@@ -139,7 +139,7 @@ also adding some enhancements as requested by users in the issues here in this r
 FanDjango's [V2.3.6 release](https://github.com/FanDjango/TPFanCtrl2/releases/tag/V2.3.6). When sufficient feedback is
 received these may be incorporated into the main trunk here.
 
-Confirmed support for: P53, Z13, Z16 Gen 1, P16 Gen1 AMD, T16 Gen1 AMD, X1 carbon gen12, X230T
+Confirmed support for: P53, Z13, Z16 Gen 1, P16 Gen1 AMD, T16 Gen1 AMD, X1 carbon gen12, X230T, P1 Gen7
 
 ### Contributing
 
