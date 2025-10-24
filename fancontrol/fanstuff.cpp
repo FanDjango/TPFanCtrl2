@@ -351,19 +351,9 @@ void FANCONTROL::SmartControl(void) {
 		newfanctrl = 0;
 	}
 
-	// ignore hysteresis on first time setting fan
-	if (this->LastSmartLevel < 0) {
-		hup = 0;
-		hdown = 0;
-	}
-	else {
-		hup = this->SmartLevels[this->LastSmartLevel].hystUp;
-		hdown = this->SmartLevels[this->LastSmartLevel].hystDown;
-	}
-
 	// Check for fan speed ramp upwards
 	for (i = 0; this->SmartLevels[i].temp != -1; i++) {
-		if (this->MaxTemp >= this->SmartLevels[i].temp + hup && this->SmartLevels[i].fan >= fanctrl) {
+		if (this->MaxTemp >= this->SmartLevels[i].temp + this->SmartLevels[i].hystUp && this->SmartLevels[i].fan >= fanctrl) {
 			newfanctrl = this->SmartLevels[i].fan;
 			levelIndex = i;
 		}
@@ -372,7 +362,7 @@ void FANCONTROL::SmartControl(void) {
 	// Check for fan speed ramp downwards
 	if (newfanctrl == -1) {
 		for (i = 0; this->SmartLevels[i].temp != -1; i++) {
-			if (this->MaxTemp <= this->SmartLevels[i].temp - hdown && this->SmartLevels[i].fan < fanctrl) {
+			if (this->MaxTemp <= this->SmartLevels[i].temp - this->SmartLevels[i].hystDown && this->SmartLevels[i].fan < fanctrl) {
 				newfanctrl = this->SmartLevels[i].fan;
 				levelIndex = i;
 				break;
@@ -381,7 +371,6 @@ void FANCONTROL::SmartControl(void) {
 	}
 
 	if (newfanctrl != -1 && newfanctrl != this->State.FanCtrl) {
-		this->LastSmartLevel = levelIndex;
 		this->SetFan("Smart", newfanctrl);
 	}
 
