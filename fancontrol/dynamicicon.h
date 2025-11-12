@@ -1,17 +1,15 @@
 #pragma once
 
 #include <windows.h>
-#include <tchar.h>
 
 class CDynamicIcon {
 public:
+	CDynamicIcon(const char *line1, const char *line2, const int iFarbeIconA, const int iFontIconA);
 
-	CDynamicIcon(const char line1[3], const char line2[3], const int iFarbeIconA, const int iFontIconA);
 	~CDynamicIcon();
 
 	HICON GetHIcon();
 private:
-
 	HDC      memDC1_;
 	HDC      memDC2_;
 	HBITMAP  oldBmp_1;
@@ -26,7 +24,17 @@ private:
 
 private:
 	__inline static HFONT CreateFont(const HDC hDC);
+
 	//default und copy verbergen
-	__inline CDynamicIcon() {};
-	__inline CDynamicIcon(const CDynamicIcon&) {};
+	__inline CDynamicIcon() 
+		: memDC1_(nullptr)
+		, memDC2_(nullptr)
+		, oldBmp_1(nullptr)
+		, oldBmp_2(nullptr)
+		, iconBmp_(nullptr)
+		, iconMaskBmp_(nullptr)
+		, hOldBrush(nullptr)
+		, rgn(nullptr)
+		, icon_(nullptr)
+	{};
 };
