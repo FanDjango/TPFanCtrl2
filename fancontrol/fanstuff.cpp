@@ -322,7 +322,6 @@ bool FANCONTROL::HandleData(void) {
 void FANCONTROL::SmartControl(void) {
 	char obuf[256] = "";
 	int i, newfanctrl = -1, levelIndex = -1, fanctrl = this->State.FanCtrl;
-	int hup, hdown;
 
 	if (this->PreviousMode == 1) {
 		sprintf_s(obuf + strlen(obuf), sizeof(obuf) - strlen(obuf), "Change Mode from BIOS->");

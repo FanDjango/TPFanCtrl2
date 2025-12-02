@@ -2,7 +2,6 @@
 #include "DynamicIcon.h"
 #include <string.h>
 
-
 CDynamicIcon::CDynamicIcon(const char *line1, const char *line2, const int iFarbeIconA, const int iFontIconA) {
     //3 chars per line
     char _line1[4], _line2[4];
@@ -10,7 +9,6 @@ CDynamicIcon::CDynamicIcon(const char *line1, const char *line2, const int iFarb
     strncpy_s(_line2, sizeof(_line2), line2, 3);
     _line1[3] = 0;
     _line2[3] = 0;
-
 
     //TODO: implement errorhandling
 
