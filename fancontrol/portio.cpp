@@ -15,6 +15,9 @@
 // 
 // --------------------------------------------------------------
 
+// Docs:
+// https://uefi.org/htmlspecs/ACPI_Spec_6_4_html/12_ACPI_Embedded_Controller_Interface_Specification/embedded-controller-command-set.html
+
 #include "_prec.h"
 #include "fancontrol.h"
 #include "TVicPort.h"
@@ -28,9 +31,12 @@ constexpr auto ACPI_EC_TYPE2_CTRLPORT = 0x66;
 constexpr auto ACPI_EC_TYPE2_DATAPORT = 0x62;
 
 // Embedded controller status register bits
-constexpr auto ACPI_EC_FLAG_OBF = 0x01	/* Output buffer full */;
-constexpr auto ACPI_EC_FLAG_IBF = 0x02	/* Input buffer full */;
-constexpr auto ACPI_EC_FLAG_CMD = 0x08	/* Input buffer contains a command */;
+constexpr auto ACPI_EC_FLAG_OBF     = 0x01	/* Output buffer full */;
+constexpr auto ACPI_EC_FLAG_IBF     = 0x02	/* Input buffer full */;
+constexpr auto ACPI_EC_FLAG_CMD     = 0x08	/* Input buffer contains a command */;
+constexpr auto ACPI_EC_FLAG_BURST   = 0x10	/* Controller is in burst mode */;
+constexpr auto ACPI_EC_FLAG_SCI_EVT = 0x20	/* Indicates SCI event is pending */;
+constexpr auto ACPI_EC_FLAG_SMI_EVT = 0x40	/* Indicates SMI event is pending */;
 
 // Embedded controller commands
 constexpr auto ACPI_EC_COMMAND_READ = (char)0x80;
