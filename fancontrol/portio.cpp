@@ -107,6 +107,12 @@ FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
         return false;
     }
 
+    // wait for OBF to be SET (data ready to read)
+    if (!WaitForFlags(this->EC_CTRL, ACPI_EC_FLAG_OBF, true)) {
+        this->Trace("readec: timed out #4");
+        return false;
+    }
+
     *pdata = ReadPort(this->EC_DATA);
 
     return true;
