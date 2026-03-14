@@ -28,7 +28,7 @@
 //       consistent across these two models, but the port addresses differ.  This code attempts to auto-detect which port layout is 
 //       present by trying one, then the other if the first fails.
 //
-// Note: Testing has established that the embedded controller on the laptop models of interest doe not support burst mode, 
+// Note: Testing has established that the embedded controller on the laptop models of interest does not support burst mode, 
 //		 so the burst mode command and status bit are not implemented in this code.  If a future model is found that does support burst
 //       mode, then the burst enable/disable commands can be issued as needed and the burst status bit can be checked to confirm that 
 //       the controller is in burst mode before attempting to read/write multiple bytes in a row. See the ACPI Embedded Controller Interface
