@@ -31,36 +31,133 @@ constexpr auto ACPI_EC_TYPE2_CTRLPORT = 0x66;
 constexpr auto ACPI_EC_TYPE2_DATAPORT = 0x62;
 
 // Embedded controller status register bits
-constexpr auto ACPI_EC_FLAG_OBF     = 0x01	/* Output buffer full */;
-constexpr auto ACPI_EC_FLAG_IBF     = 0x02	/* Input buffer full */;
-constexpr auto ACPI_EC_FLAG_CMD     = 0x08	/* Input buffer contains a command */;
-constexpr auto ACPI_EC_FLAG_BURST   = 0x10	/* Controller is in burst mode */;
-constexpr auto ACPI_EC_FLAG_SCI_EVT = 0x20	/* Indicates SCI event is pending */;
-constexpr auto ACPI_EC_FLAG_SMI_EVT = 0x40	/* Indicates SMI event is pending */;
+constexpr auto ACPI_EC_FLAG_OBF     = static_cast<UCHAR>(0x01);	/* Output buffer full */
+constexpr auto ACPI_EC_FLAG_IBF     = static_cast<UCHAR>(0x02);	/* Input buffer full */
+constexpr auto ACPI_EC_FLAG_CMD     = static_cast<UCHAR>(0x08);	/* Input buffer contains a command */
+constexpr auto ACPI_EC_FLAG_BURST   = static_cast<UCHAR>(0x10);	/* Controller is in burst mode */
+constexpr auto ACPI_EC_FLAG_SCI_EVT = static_cast<UCHAR>(0x20);	/* Indicates SCI event is pending */
+constexpr auto ACPI_EC_FLAG_SMI_EVT = static_cast<UCHAR>(0x40);	/* Indicates SMI event is pending */
 
 // Embedded controller commands
-constexpr auto ACPI_EC_COMMAND_READ = static_cast<unsigned char>(0x80);
-constexpr auto ACPI_EC_COMMAND_WRITE = static_cast<unsigned char>(0x81);
-constexpr auto ACPI_EC_BURST_ENABLE = static_cast<unsigned char>(0x82);
-constexpr auto ACPI_EC_BURST_DISABLE = static_cast<unsigned char>(0x83);
-constexpr auto ACPI_EC_COMMAND_QUERY = static_cast<unsigned char>(0x84);
+constexpr auto ACPI_EC_COMMAND_READ = static_cast<UCHAR>(0x80);
+constexpr auto ACPI_EC_COMMAND_WRITE = static_cast<UCHAR>(0x81);
+constexpr auto ACPI_EC_BURST_ENABLE = static_cast<UCHAR>(0x82);
+constexpr auto ACPI_EC_BURST_DISABLE = static_cast<UCHAR>(0x83);
+constexpr auto ACPI_EC_COMMAND_QUERY = static_cast<UCHAR>(0x84);
 
 constexpr int DEFAULT_SLEEP_TICKS = 10;
 constexpr int DEFAULT_TIMEOUT_MS = 1000;
+constexpr int RECOVERY_DRAIN_READS = 8;
 
 //--------------------------------------------------------------------------
-// wait for the desired status from the embedded controller (EC) via port io 
+// initialize embedded controller ports if not yet selected
+//--------------------------------------------------------------------------
+static void
+InitializeEcPorts(int& ctrlPort, int& dataPort) {
+	if (ctrlPort != 0 && dataPort != 0) return;
+
+	ctrlPort = ACPI_EC_TYPE1_CTRLPORT;
+	dataPort = ACPI_EC_TYPE1_DATAPORT;
+}
+
+//--------------------------------------------------------------------------
+// switch between known embedded controller port layouts
+//--------------------------------------------------------------------------
+static void
+ToggleEcPorts(int& ctrlPort, int& dataPort) {
+	if (ctrlPort == ACPI_EC_TYPE1_CTRLPORT) {
+		ctrlPort = ACPI_EC_TYPE2_CTRLPORT;
+		dataPort = ACPI_EC_TYPE2_DATAPORT;
+	}
+	else {
+		ctrlPort = ACPI_EC_TYPE1_CTRLPORT;
+		dataPort = ACPI_EC_TYPE1_DATAPORT;
+	}
+}
+
+//--------------------------------------------------------------------------
+// validate and normalize an EC byte offset
 //--------------------------------------------------------------------------
 static bool
-WaitForFlags(USHORT port, char flags, bool onoff = false, int timeout = DEFAULT_TIMEOUT_MS) {
-    int time = 0;
-    for (; time < timeout; time += DEFAULT_SLEEP_TICKS) {
-        char data = ReadPort(port);
-        bool flagState = (data & flags) != 0;
-        if (flagState == onoff) return true;
-        ::Sleep(DEFAULT_SLEEP_TICKS);
-    }
-    return false;
+NormalizeEcOffset(int offset, UCHAR* pOffset) {
+	if (pOffset == NULL) return false;
+	if (offset < 0 || offset > 0xff) return false;
+
+	*pOffset = static_cast<UCHAR>(offset);
+	return true;
+}
+
+//--------------------------------------------------------------------------
+// wait until all requested bits are clear
+//--------------------------------------------------------------------------
+static bool
+WaitForAllClear(USHORT port, UCHAR flags, int timeout = DEFAULT_TIMEOUT_MS) {
+	if (timeout < 0) timeout = DEFAULT_TIMEOUT_MS;
+
+	const DWORD start = ::GetTickCount();
+
+	for (;;) {
+		const UCHAR data = ReadPort(port);
+		if ((data & flags) == 0) return true;
+		if ((::GetTickCount() - start) >= static_cast<DWORD>(timeout)) return false;
+		::Sleep(DEFAULT_SLEEP_TICKS);
+	}
+}
+
+//--------------------------------------------------------------------------
+// wait until any requested bit is set
+//--------------------------------------------------------------------------
+static bool
+WaitForAnySet(USHORT port, UCHAR flags, int timeout = DEFAULT_TIMEOUT_MS) {
+	if (timeout < 0) timeout = DEFAULT_TIMEOUT_MS;
+
+	const DWORD start = ::GetTickCount();
+
+	for (;;) {
+		const UCHAR data = ReadPort(port);
+		if ((data & flags) != 0) return true;
+		if ((::GetTickCount() - start) >= static_cast<DWORD>(timeout)) return false;
+		::Sleep(DEFAULT_SLEEP_TICKS);
+	}
+}
+
+//--------------------------------------------------------------------------
+// best-effort drain of a stale output buffer so a new transaction can start
+//--------------------------------------------------------------------------
+static void
+BestEffortDrainOutputBuffer(USHORT ctrlPort, USHORT dataPort) {
+	for (int i = 0; i < RECOVERY_DRAIN_READS; i++) {
+		const UCHAR status = ReadPort(ctrlPort);
+		if ((status & ACPI_EC_FLAG_OBF) == 0) break;
+
+		(void)ReadPort(dataPort);
+		::Sleep(1);
+	}
+}
+
+//--------------------------------------------------------------------------
+// wait for controller ready state; drains stale output if necessary
+//--------------------------------------------------------------------------
+static bool
+WaitForControllerReady(USHORT ctrlPort, USHORT dataPort, int timeout = DEFAULT_TIMEOUT_MS) {
+	if (timeout < 0) timeout = DEFAULT_TIMEOUT_MS;
+
+	const DWORD start = ::GetTickCount();
+
+	for (;;) {
+		const UCHAR status = ReadPort(ctrlPort);
+
+		if ((status & ACPI_EC_FLAG_OBF) != 0) {
+			(void)ReadPort(dataPort);
+		}
+		else if ((status & ACPI_EC_FLAG_IBF) == 0) {
+			return true;
+		}
+
+		if ((::GetTickCount() - start) >= static_cast<DWORD>(timeout)) return false;
+
+		::Sleep(DEFAULT_SLEEP_TICKS);
+	}
 }
 
 //-------------------------------------------------------------------------
@@ -68,54 +165,86 @@ WaitForFlags(USHORT port, char flags, bool onoff = false, int timeout = DEFAULT_
 //-------------------------------------------------------------------------
 bool
 FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
-    if (this->EC_CTRL == 0) {
-        this->EC_CTRL = ACPI_EC_TYPE1_CTRLPORT;
-        this->EC_DATA = ACPI_EC_TYPE1_DATAPORT;
-        this->Trace("Using ACPI_EC_TYPE1");
-    }
+	UCHAR ecOffset = 0;
+	char traceText[160] = "";
 
-    // wait for IBF and OBF to clear
-    if (!WaitForFlags(this->EC_CTRL, ACPI_EC_FLAG_IBF | ACPI_EC_FLAG_OBF)) {
-        this->Trace("readec: timed out #1");
-        if (this->EC_CTRL == ACPI_EC_TYPE1_CTRLPORT) {
-            this->EC_CTRL = ACPI_EC_TYPE2_CTRLPORT;
-            this->EC_DATA = ACPI_EC_TYPE2_DATAPORT;
-            this->Trace("Now using ACPI_EC_TYPE2");
-        } else {
-            this->EC_CTRL = ACPI_EC_TYPE1_CTRLPORT;
-            this->EC_DATA = ACPI_EC_TYPE1_DATAPORT;
-            this->Trace("Now using ACPI_EC_TYPE1");
-        }
-        return false;
-    }
+	if (pdata == NULL) {
+		this->Trace("readec: pdata is null");
+		return false;
+	}
 
-    // indicate read operation desired
-    WritePort(this->EC_CTRL, ACPI_EC_COMMAND_READ);
+	if (!NormalizeEcOffset(offset, &ecOffset)) {
+		sprintf_s(traceText, sizeof(traceText), "readec: invalid offset 0x%X", offset);
+		this->Trace(traceText);
+		return false;
+	}
 
-    // wait for IBF to clear (command byte removed from EC's input queue)
-    if (!WaitForFlags(this->EC_CTRL, ACPI_EC_FLAG_IBF)) {
-        this->Trace("readec: timed out #2");
-        return false;
-    }
+	if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
+		InitializeEcPorts(this->EC_CTRL, this->EC_DATA);
+		this->Trace("Using ACPI_EC_TYPE1");
+	}
 
-    // indicate read operation desired location
-    WritePort(this->EC_DATA, static_cast<char>(offset));
+	for (int portAttempt = 0; portAttempt < 2; portAttempt++) {
+		const USHORT ctrlPort = static_cast<USHORT>(this->EC_CTRL);
+		const USHORT dataPort = static_cast<USHORT>(this->EC_DATA);
 
-    // wait for IBF to clear (address byte removed from EC's input queue)
-    if (!WaitForFlags(this->EC_CTRL, ACPI_EC_FLAG_IBF)) {
-        this->Trace("readec: timed out #3");
-        return false;
-    }
+		// wait for IBF and OBF to clear; drain stale OBF if present
+		if (!WaitForControllerReady(ctrlPort, dataPort)) {
+			sprintf_s(traceText, sizeof(traceText),
+				"readec: timed out #1 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
+				ctrlPort, dataPort, ecOffset);
+			this->Trace(traceText);
 
-    // wait for OBF to be SET (data ready to read)
-    if (!WaitForFlags(this->EC_CTRL, ACPI_EC_FLAG_OBF, true)) {
-        this->Trace("readec: timed out #4");
-        return false;
-    }
+			if (portAttempt == 0) {
+				ToggleEcPorts(this->EC_CTRL, this->EC_DATA);
+				this->Trace(this->EC_CTRL == ACPI_EC_TYPE1_CTRLPORT ? "Now using ACPI_EC_TYPE1" : "Now using ACPI_EC_TYPE2");
+				continue;
+			}
 
-    *pdata = ReadPort(this->EC_DATA);
+			return false;
+		}
 
-    return true;
+		// indicate read operation desired
+		WritePort(ctrlPort, ACPI_EC_COMMAND_READ);
+
+		// wait for IBF to clear (command byte removed from EC's input queue)
+		if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
+			BestEffortDrainOutputBuffer(ctrlPort, dataPort);
+			sprintf_s(traceText, sizeof(traceText),
+				"readec: timed out #2 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
+				ctrlPort, dataPort, ecOffset);
+			this->Trace(traceText);
+			return false;
+		}
+
+		// indicate read operation desired location
+		WritePort(dataPort, ecOffset);
+
+		// wait for IBF to clear (address byte removed from EC's input queue)
+		if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
+			BestEffortDrainOutputBuffer(ctrlPort, dataPort);
+			sprintf_s(traceText, sizeof(traceText),
+				"readec: timed out #3 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
+				ctrlPort, dataPort, ecOffset);
+			this->Trace(traceText);
+			return false;
+		}
+
+		// wait for OBF to be SET (data ready to read)
+		if (!WaitForAnySet(ctrlPort, ACPI_EC_FLAG_OBF)) {
+			BestEffortDrainOutputBuffer(ctrlPort, dataPort);
+			sprintf_s(traceText, sizeof(traceText),
+				"readec: timed out #4 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
+				ctrlPort, dataPort, ecOffset);
+			this->Trace(traceText);
+			return false;
+		}
+
+		*pdata = static_cast<char>(ReadPort(dataPort));
+		return true;
+	}
+
+	return false;
 }
 
 //-------------------------------------------------------------------------
@@ -123,38 +252,82 @@ FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
 //-------------------------------------------------------------------------
 bool
 FANCONTROL::WriteByteToEC(int offset, char NewData) {
-    // wait for IBF and OBF to clear
-    if (!WaitForFlags(this->EC_CTRL, ACPI_EC_FLAG_IBF | ACPI_EC_FLAG_OBF)) {
-        this->Trace("writeec: timed out #1");
-        return false;
-    }
+	UCHAR ecOffset = 0;
+	const UCHAR ecData = static_cast<UCHAR>(NewData);
+	char traceText[160] = "";
 
-    // indicate write operation desired
-    WritePort(this->EC_CTRL, ACPI_EC_COMMAND_WRITE);
+	if (!NormalizeEcOffset(offset, &ecOffset)) {
+		sprintf_s(traceText, sizeof(traceText), "writeec: invalid offset 0x%X", offset);
+		this->Trace(traceText);
+		return false;
+	}
 
-    // wait for IBF to clear (command byte removed from EC's input queue)
-    if (!WaitForFlags(this->EC_CTRL, ACPI_EC_FLAG_IBF)) {
-        this->Trace("writeec: timed out #2");
-        return false;
-    }
+	if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
+		InitializeEcPorts(this->EC_CTRL, this->EC_DATA);
+		this->Trace("Using ACPI_EC_TYPE1");
+	}
 
-    // indicate write operation desired location
-    WritePort(this->EC_DATA, static_cast<char>(offset));
+	for (int portAttempt = 0; portAttempt < 2; portAttempt++) {
+		const USHORT ctrlPort = static_cast<USHORT>(this->EC_CTRL);
+		const USHORT dataPort = static_cast<USHORT>(this->EC_DATA);
 
-    // wait for IBF to clear (address byte removed from EC's input queue)
-    if (!WaitForFlags(this->EC_CTRL, ACPI_EC_FLAG_IBF)) {
-        this->Trace("writeec: timed out #3");
-        return false;
-    }
+		// wait for IBF and OBF to clear; drain stale OBF if present
+		if (!WaitForControllerReady(ctrlPort, dataPort)) {
+			sprintf_s(traceText, sizeof(traceText),
+				"writeec: timed out #1 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
+				ctrlPort, dataPort, ecOffset, ecData);
+			this->Trace(traceText);
 
-    // perform the write operation
-    WritePort(this->EC_DATA, NewData);
+			if (portAttempt == 0) {
+				ToggleEcPorts(this->EC_CTRL, this->EC_DATA);
+				this->Trace(this->EC_CTRL == ACPI_EC_TYPE1_CTRLPORT ? "Now using ACPI_EC_TYPE1" : "Now using ACPI_EC_TYPE2");
+				continue;
+			}
 
-    // wait for IBF to clear (data byte removed from EC's input queue)
-    if (!WaitForFlags(this->EC_CTRL, ACPI_EC_FLAG_IBF)) {
-        this->Trace("writeec: timed out #4");
-        return false;
-    }
+			return false;
+		}
 
-    return true;
+		// indicate write operation desired
+		WritePort(ctrlPort, ACPI_EC_COMMAND_WRITE);
+
+		// wait for IBF to clear (command byte removed from EC's input queue)
+		if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
+			BestEffortDrainOutputBuffer(ctrlPort, dataPort);
+			sprintf_s(traceText, sizeof(traceText),
+				"writeec: timed out #2 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
+				ctrlPort, dataPort, ecOffset, ecData);
+			this->Trace(traceText);
+			return false;
+		}
+
+		// indicate write operation desired location
+		WritePort(dataPort, ecOffset);
+
+		// wait for IBF to clear (address byte removed from EC's input queue)
+		if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
+			BestEffortDrainOutputBuffer(ctrlPort, dataPort);
+			sprintf_s(traceText, sizeof(traceText),
+				"writeec: timed out #3 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
+				ctrlPort, dataPort, ecOffset, ecData);
+			this->Trace(traceText);
+			return false;
+		}
+
+		// perform the write operation
+		WritePort(dataPort, ecData);
+
+		// wait for IBF to clear (data byte removed from EC's input queue)
+		if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
+			BestEffortDrainOutputBuffer(ctrlPort, dataPort);
+			sprintf_s(traceText, sizeof(traceText),
+				"writeec: timed out #4 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
+				ctrlPort, dataPort, ecOffset, ecData);
+			this->Trace(traceText);
+			return false;
+		}
+
+		return true;
+	}
+
+	return false;
 }

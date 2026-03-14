@@ -548,11 +548,13 @@ bool FANCONTROL::SampleMatch(FCSTATE* smp1, FCSTATE* smp2) {
 //  lock access to the EC controller
 //-------------------------------------------------------------------------
 bool FANCONTROL::LockECAccess() {
-	int numTries = 10, sleepTicks = 100, ok_ecaccess = false;
+	const int numTries = 10;
+	const int sleepTicks = 100;
 
 	for (int i = 0; i < numTries; i++) {
-		if (ok_ecaccess = this->EcAccess.Lock(100))	return TRUE;
-		if (i < numTries) ::Sleep(sleepTicks);
+		if (this->EcAccess.Lock(100)) return TRUE;
+
+		if (i + 1 < numTries) ::Sleep(sleepTicks);
 	}
 
 	this->Trace("Could not acquire mutex to read EC status");
@@ -572,7 +574,13 @@ void FANCONTROL::FreeECAccess() {
 //-------------------------------------------------------------------------
 bool FANCONTROL::ReadEcStatus(FCSTATE* pfcstate) {
 	FCSTATE sample1, sample2;
-	int numTries = 10, sleepTicks = 200;
+	const int numTries = 10;
+	const int sleepTicks = 200;
+
+	if (pfcstate == NULL) {
+		this->Trace("ReadEcStatus: pfcstate is null");
+		return false;
+	}
 
 	if (!this->LockECAccess()) return false;
 
@@ -582,12 +590,16 @@ bool FANCONTROL::ReadEcStatus(FCSTATE* pfcstate) {
 	// values, using the above match function
 
 	for (int i = 0; i < numTries; i++) {
-		if (this->ReadEcRaw(&sample1) && this->ReadEcRaw(&sample2) && this->SampleMatch(&sample1, &sample2)) {
+		const bool okSample1 = this->ReadEcRaw(&sample1);
+		const bool okSample2 = this->ReadEcRaw(&sample2);
+
+		if (okSample1 && okSample2 && this->SampleMatch(&sample1, &sample2)) {
 			memcpy(pfcstate, &sample2, sizeof(*pfcstate));
 			this->FreeECAccess();
 			return TRUE;
 		}
-		if (i < numTries) ::Sleep(sleepTicks);
+
+		if (i + 1 < numTries) ::Sleep(sleepTicks);
 	}
 
 	this->FreeECAccess();
