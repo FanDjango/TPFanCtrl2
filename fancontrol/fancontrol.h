@@ -183,6 +183,7 @@ protected:
 	char CurrentStatuscsv[256];
 
 	// dialog.cpp
+
 	int CurrentModeFromDialog();
 
 	int ShowAllFromDialog();
@@ -215,6 +216,7 @@ protected:
 	int WorkThread();
 
 	// fancontrol.cpp
+
 	bool LockECAccess();
 
 	void FreeECAccess();
@@ -240,6 +242,7 @@ protected:
 	int previousModeBeforeLidClose = -1;
 
 	// misc.cpp
+
 	int ReadConfig(const char* filename);
 
 	void Trace(const char* text);
@@ -260,6 +263,7 @@ protected:
 	);
 
 	// portio.cpp
+
 	bool ReadByteFromEC(int offset, char* pdata);
 
 	bool WriteByteToEC(int offset, char data);
