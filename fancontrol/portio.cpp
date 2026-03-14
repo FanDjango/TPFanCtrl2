@@ -39,11 +39,11 @@ constexpr auto ACPI_EC_FLAG_SCI_EVT = 0x20	/* Indicates SCI event is pending */;
 constexpr auto ACPI_EC_FLAG_SMI_EVT = 0x40	/* Indicates SMI event is pending */;
 
 // Embedded controller commands
-constexpr auto ACPI_EC_COMMAND_READ = (char)0x80;
-constexpr auto ACPI_EC_COMMAND_WRITE = (char)0x81;
-constexpr auto ACPI_EC_BURST_ENABLE = (char)0x82;
-constexpr auto ACPI_EC_BURST_DISABLE = (char)0x83;
-constexpr auto ACPI_EC_COMMAND_QUERY = (char)0x84;
+constexpr auto ACPI_EC_COMMAND_READ = static_cast<unsigned char>(0x80);
+constexpr auto ACPI_EC_COMMAND_WRITE = static_cast<unsigned char>(0x81);
+constexpr auto ACPI_EC_BURST_ENABLE = static_cast<unsigned char>(0x82);
+constexpr auto ACPI_EC_BURST_DISABLE = static_cast<unsigned char>(0x83);
+constexpr auto ACPI_EC_COMMAND_QUERY = static_cast<unsigned char>(0x84);
 
 constexpr int DEFAULT_SLEEP_TICKS = 10;
 constexpr int DEFAULT_TIMEOUT_MS = 1000;
