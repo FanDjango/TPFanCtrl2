@@ -76,18 +76,6 @@ ToggleEcPorts(int& ctrlPort, int& dataPort) {
 }
 
 //--------------------------------------------------------------------------
-// validate and normalize an EC byte offset
-//--------------------------------------------------------------------------
-static bool
-NormalizeEcOffset(int offset, UCHAR* pOffset) {
-	if (pOffset == NULL) return false;
-	if (offset < 0 || offset > 0xff) return false;
-
-	*pOffset = static_cast<UCHAR>(offset);
-	return true;
-}
-
-//--------------------------------------------------------------------------
 // wait until all requested bits are clear
 //--------------------------------------------------------------------------
 static bool
@@ -125,7 +113,7 @@ WaitForAnySet(USHORT port, UCHAR flags, int timeout = DEFAULT_TIMEOUT_MS) {
 // best-effort drain of a stale output buffer so a new transaction can start
 //--------------------------------------------------------------------------
 static void
-BestEffortDrainOutputBuffer(USHORT ctrlPort, USHORT dataPort) {
+DrainOutputBuffer(USHORT ctrlPort, USHORT dataPort) {
 	for (int i = 0; i < RECOVERY_DRAIN_READS; i++) {
 		const UCHAR status = ReadPort(ctrlPort);
 		if ((status & ACPI_EC_FLAG_OBF) == 0) break;
@@ -173,12 +161,6 @@ FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
 		return false;
 	}
 
-	if (!NormalizeEcOffset(offset, &ecOffset)) {
-		sprintf_s(traceText, sizeof(traceText), "readec: invalid offset 0x%X", offset);
-		this->Trace(traceText);
-		return false;
-	}
-
 	if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
 		InitializeEcPorts(this->EC_CTRL, this->EC_DATA);
 		this->Trace("Using ACPI_EC_TYPE1");
@@ -209,7 +191,7 @@ FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
 
 		// wait for IBF to clear (command byte removed from EC's input queue)
 		if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
-			BestEffortDrainOutputBuffer(ctrlPort, dataPort);
+			DrainOutputBuffer(ctrlPort, dataPort);
 			sprintf_s(traceText, sizeof(traceText),
 				"readec: timed out #2 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
 				ctrlPort, dataPort, ecOffset);
@@ -222,7 +204,7 @@ FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
 
 		// wait for IBF to clear (address byte removed from EC's input queue)
 		if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
-			BestEffortDrainOutputBuffer(ctrlPort, dataPort);
+			DrainOutputBuffer(ctrlPort, dataPort);
 			sprintf_s(traceText, sizeof(traceText),
 				"readec: timed out #3 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
 				ctrlPort, dataPort, ecOffset);
@@ -232,7 +214,7 @@ FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
 
 		// wait for OBF to be SET (data ready to read)
 		if (!WaitForAnySet(ctrlPort, ACPI_EC_FLAG_OBF)) {
-			BestEffortDrainOutputBuffer(ctrlPort, dataPort);
+			DrainOutputBuffer(ctrlPort, dataPort);
 			sprintf_s(traceText, sizeof(traceText),
 				"readec: timed out #4 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
 				ctrlPort, dataPort, ecOffset);
@@ -255,12 +237,6 @@ FANCONTROL::WriteByteToEC(int offset, char NewData) {
 	UCHAR ecOffset = 0;
 	const UCHAR ecData = static_cast<UCHAR>(NewData);
 	char traceText[160] = "";
-
-	if (!NormalizeEcOffset(offset, &ecOffset)) {
-		sprintf_s(traceText, sizeof(traceText), "writeec: invalid offset 0x%X", offset);
-		this->Trace(traceText);
-		return false;
-	}
 
 	if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
 		InitializeEcPorts(this->EC_CTRL, this->EC_DATA);
@@ -292,7 +268,7 @@ FANCONTROL::WriteByteToEC(int offset, char NewData) {
 
 		// wait for IBF to clear (command byte removed from EC's input queue)
 		if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
-			BestEffortDrainOutputBuffer(ctrlPort, dataPort);
+			DrainOutputBuffer(ctrlPort, dataPort);
 			sprintf_s(traceText, sizeof(traceText),
 				"writeec: timed out #2 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
 				ctrlPort, dataPort, ecOffset, ecData);
@@ -305,7 +281,7 @@ FANCONTROL::WriteByteToEC(int offset, char NewData) {
 
 		// wait for IBF to clear (address byte removed from EC's input queue)
 		if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
-			BestEffortDrainOutputBuffer(ctrlPort, dataPort);
+			DrainOutputBuffer(ctrlPort, dataPort);
 			sprintf_s(traceText, sizeof(traceText),
 				"writeec: timed out #3 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
 				ctrlPort, dataPort, ecOffset, ecData);
@@ -318,7 +294,7 @@ FANCONTROL::WriteByteToEC(int offset, char NewData) {
 
 		// wait for IBF to clear (data byte removed from EC's input queue)
 		if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
-			BestEffortDrainOutputBuffer(ctrlPort, dataPort);
+			DrainOutputBuffer(ctrlPort, dataPort);
 			sprintf_s(traceText, sizeof(traceText),
 				"writeec: timed out #4 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
 				ctrlPort, dataPort, ecOffset, ecData);
