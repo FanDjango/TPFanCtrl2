@@ -23,9 +23,15 @@
 #include "TVicPort.h"
 
 // Registers of the embedded controller
+//
 // Note: Testing on a Lenovo P53 with EC at 0x1600/0x1604 and a Lenovo T430 with EC at 0x62/0x66 suggests that the EC command set is
 //       consistent across these two models, but the port addresses differ.  This code attempts to auto-detect which port layout is 
 //       present by trying one, then the other if the first fails.
+//
+// Note: Testing has established that the embedded controller on the laptop models of interest doe not support burst mode, 
+//		 so the burst mode command and status bit are not implemented in this code.  If a future model is found that does support burst
+//       mode, then the burst enable/disable commands can be issued as needed and the burst status bit can be checked to confirm that 
+//       the controller is in burst mode before attempting to read/write multiple bytes in a row.
 // 
 // From TPFanControl V0.6.3+ V.2.2.0+
 constexpr auto ACPI_EC_TYPE1_CTRLPORT = 0x1604;
