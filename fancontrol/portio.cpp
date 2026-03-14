@@ -23,10 +23,14 @@
 #include "TVicPort.h"
 
 // Registers of the embedded controller
-// V0.6.3+ V.2.2.0+
+// Note: Testing on a Lenovo P53 with EC at 0x1600/0x1604 and a Lenovo T430 with EC at 0x62/0x66 suggests that the EC command set is
+//       consistent across these two models, but the port addresses differ.  This code attempts to auto-detect which port layout is 
+//       present by trying one, then the other if the first fails.
+// 
+// From TPFanControl V0.6.3+ V.2.2.0+
 constexpr auto ACPI_EC_TYPE1_CTRLPORT = 0x1604;
 constexpr auto ACPI_EC_TYPE1_DATAPORT = 0x1600;
-// V0.6.2 final
+// From TPFanControl V0.6.2 final
 constexpr auto ACPI_EC_TYPE2_CTRLPORT = 0x66;
 constexpr auto ACPI_EC_TYPE2_DATAPORT = 0x62;
 
