@@ -264,6 +264,7 @@ ExecuteEcRead(USHORT ctrlPort, USHORT dataPort, UCHAR ecOffset, char& outData, c
 	}
 
 	outData = static_cast<char>(ReadPort(dataPort));
+
 	return true;
 }
 
