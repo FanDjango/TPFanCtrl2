@@ -166,17 +166,8 @@ WaitForControllerReady(USHORT ctrlPort, USHORT dataPort, int timeout = DEFAULT_T
 //-------------------------------------------------------------------------
 bool
 FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
-    if (offset < 0 || offset > 255) {
-        this->Trace("readec: invalid offset");
-        return false;
-    }
-    UCHAR ecOffset = static_cast<UCHAR>(offset);  // Fixed: Use the passed offset
+    UCHAR ecOffset = static_cast<UCHAR>(offset);
     char traceText[160] = "";
-
-    if (pdata == nullptr) {  // Use nullptr for C++11+
-        this->Trace("readec: pdata is null");
-        return false;
-    }
 
     if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
         InitializeEcPorts(this->EC_CTRL, this->EC_DATA);
