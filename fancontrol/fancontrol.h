@@ -245,8 +245,6 @@ protected:
 
 	int ReadConfig(const char* filename);
 
-	void Trace(const char* text);
-
 	void Tracecsv(const char* textcsv);
 
 	void Tracecsvod(const char* textcsv);
@@ -284,6 +282,8 @@ public:
 	void ProcessTextIcons(void);
 
 	void RemoveTextIcons(void);
+
+	void Trace(const char* text);
 };
 
 #endif // FANCONTROL_H

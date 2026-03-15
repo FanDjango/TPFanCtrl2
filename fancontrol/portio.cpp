@@ -59,6 +59,8 @@ constexpr auto ACPI_EC_COMMAND_QUERY = static_cast<UCHAR>(0x84);
 constexpr int DEFAULT_SLEEP_TICKS = 10;
 constexpr int DEFAULT_TIMEOUT_MS = 1000;
 constexpr int RECOVERY_DRAIN_READS = 8;
+constexpr int MAX_PORT_ATTEMPTS = 2;
+constexpr int TRACE_BUFFER_SIZE = 160;
 
 //--------------------------------------------------------------------------
 // initialize embedded controller ports if not yet selected
@@ -162,79 +164,162 @@ WaitForControllerReady(USHORT ctrlPort, USHORT dataPort, int timeout = DEFAULT_T
 }
 
 //-------------------------------------------------------------------------
+// Helper: Execute EC read operation on given ports
+// Returns: true if successful, false if timeout or error
+//-------------------------------------------------------------------------
+static bool
+ExecuteEcRead(USHORT ctrlPort, USHORT dataPort, UCHAR ecOffset, char& outData, char* traceText, size_t traceSize, FANCONTROL* pThis) {
+	// wait for IBF and OBF to clear; drain stale OBF if present
+	if (!WaitForControllerReady(ctrlPort, dataPort)) {
+		sprintf_s(traceText, traceSize,
+			"readec: timed out #1 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
+			ctrlPort, dataPort, ecOffset);
+		pThis->Trace(traceText);
+		return false;
+	}
+
+	// indicate read operation desired
+	WritePort(ctrlPort, ACPI_EC_COMMAND_READ);
+
+	// wait for IBF to clear (command byte removed from EC's input queue)
+	if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
+		DrainOutputBuffer(ctrlPort, dataPort);
+		sprintf_s(traceText, traceSize,
+			"readec: timed out #2 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
+			ctrlPort, dataPort, ecOffset);
+		pThis->Trace(traceText);
+		return false;
+	}
+
+	// indicate read operation desired location
+	WritePort(dataPort, ecOffset);
+
+	// wait for IBF to clear (address byte removed from EC's input queue)
+	if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
+		DrainOutputBuffer(ctrlPort, dataPort);
+		sprintf_s(traceText, traceSize,
+			"readec: timed out #3 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
+			ctrlPort, dataPort, ecOffset);
+		pThis->Trace(traceText);
+		return false;
+	}
+
+	// wait for OBF to be SET (data ready to read)
+	if (!WaitForAnySet(ctrlPort, ACPI_EC_FLAG_OBF)) {
+		DrainOutputBuffer(ctrlPort, dataPort);
+		sprintf_s(traceText, traceSize,
+			"readec: timed out #4 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
+			ctrlPort, dataPort, ecOffset);
+		pThis->Trace(traceText);
+		return false;
+	}
+
+	outData = static_cast<char>(ReadPort(dataPort));
+	return true;
+}
+
+//-------------------------------------------------------------------------
+// Helper: Execute EC write operation on given ports
+// Returns: true if successful, false if timeout or error
+//-------------------------------------------------------------------------
+static bool
+ExecuteEcWrite(USHORT ctrlPort, USHORT dataPort, UCHAR ecOffset, UCHAR ecData, char* traceText, size_t traceSize, FANCONTROL* pThis) {
+	// wait for IBF and OBF to clear; drain stale OBF if present
+	if (!WaitForControllerReady(ctrlPort, dataPort)) {
+		sprintf_s(traceText, traceSize,
+			"writeec: timed out #1 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
+			ctrlPort, dataPort, ecOffset, ecData);
+		pThis->Trace(traceText);
+		return false;
+	}
+
+	// indicate write operation desired
+	WritePort(ctrlPort, ACPI_EC_COMMAND_WRITE);
+
+	// wait for IBF to clear (command byte removed from EC's input queue)
+	if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
+		DrainOutputBuffer(ctrlPort, dataPort);
+		sprintf_s(traceText, traceSize,
+			"writeec: timed out #2 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
+			ctrlPort, dataPort, ecOffset, ecData);
+		pThis->Trace(traceText);
+		return false;
+	}
+
+	// indicate write operation desired location
+	WritePort(dataPort, ecOffset);
+
+	// wait for IBF to clear (address byte removed from EC's input queue)
+	if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
+		DrainOutputBuffer(ctrlPort, dataPort);
+		sprintf_s(traceText, traceSize,
+			"writeec: timed out #3 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
+			ctrlPort, dataPort, ecOffset, ecData);
+		pThis->Trace(traceText);
+		return false;
+	}
+
+	// perform the write operation
+	WritePort(dataPort, ecData);
+
+	// wait for IBF to clear (data byte removed from EC's input queue)
+	if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
+		DrainOutputBuffer(ctrlPort, dataPort);
+		sprintf_s(traceText, traceSize,
+			"writeec: timed out #4 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
+			ctrlPort, dataPort, ecOffset, ecData);
+		pThis->Trace(traceText);
+		return false;
+	}
+
+	return true;
+}
+
+//-------------------------------------------------------------------------
 // read a byte from the embedded controller (EC) via port io 
 //-------------------------------------------------------------------------
 bool
 FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
-    UCHAR ecOffset = static_cast<UCHAR>(offset);
-    char traceText[160] = "";
+	UCHAR ecOffset = static_cast<UCHAR>(offset);
+	char traceText[TRACE_BUFFER_SIZE] = "";
 
-    if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
-        InitializeEcPorts(this->EC_CTRL, this->EC_DATA);
-        this->Trace("Using ACPI_EC_TYPE1");
-    }
+	// Thread-safe initialization of EC ports
+	if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
+		// Consider adding lock here if multi-threaded access is expected
+		// SCOPED_LOCK lock(this->EcAccess);
+		if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
+			InitializeEcPorts(this->EC_CTRL, this->EC_DATA);
+			this->Trace("Using ACPI_EC_TYPE1");
+		}
+	}
 
-    for (int portAttempt = 0; portAttempt < 2; portAttempt++) {
-        const USHORT ctrlPort = static_cast<USHORT>(this->EC_CTRL);
-        const USHORT dataPort = static_cast<USHORT>(this->EC_DATA);
+	// Try each port type
+	for (int portAttempt = 0; portAttempt < MAX_PORT_ATTEMPTS; portAttempt++) {
+		const USHORT ctrlPort = static_cast<USHORT>(this->EC_CTRL);
+		const USHORT dataPort = static_cast<USHORT>(this->EC_DATA);
 
-        // wait for IBF and OBF to clear; drain stale OBF if present
-        if (!WaitForControllerReady(ctrlPort, dataPort)) {
-            sprintf_s(traceText, sizeof(traceText),
-                "readec: timed out #1 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
-                ctrlPort, dataPort, ecOffset);
-            this->Trace(traceText);
+		// Attempt read operation
+		if (ExecuteEcRead(ctrlPort, dataPort, ecOffset, *pdata, traceText, sizeof(traceText), this)) {
+			// Log successful completion on port switch
+			if (portAttempt > 0) {
+				sprintf_s(traceText, sizeof(traceText),
+					"readec: SUCCESS after port toggle to %s",
+					this->EC_CTRL == ACPI_EC_TYPE1_CTRLPORT ? "TYPE1" : "TYPE2");
+				this->Trace(traceText);
+			}
+			return true;
+		}
 
-            if (portAttempt == 0) {
-                ToggleEcPorts(this->EC_CTRL, this->EC_DATA);
-                this->Trace(this->EC_CTRL == ACPI_EC_TYPE1_CTRLPORT ? "Now using ACPI_EC_TYPE1" : "Now using ACPI_EC_TYPE2");
-                continue;
-            }
+		// Only toggle on first failure
+		if (portAttempt == 0) {
+			ToggleEcPorts(this->EC_CTRL, this->EC_DATA);
+			this->Trace(this->EC_CTRL == ACPI_EC_TYPE1_CTRLPORT ? 
+				"Attempting ACPI_EC_TYPE1" : "Attempting ACPI_EC_TYPE2");
+		}
+	}
 
-            return false;
-        }
-
-        // indicate read operation desired
-        WritePort(ctrlPort, ACPI_EC_COMMAND_READ);
-
-        // wait for IBF to clear (command byte removed from EC's input queue)
-        if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
-            DrainOutputBuffer(ctrlPort, dataPort);
-            sprintf_s(traceText, sizeof(traceText),
-                "readec: timed out #2 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
-                ctrlPort, dataPort, ecOffset);
-            this->Trace(traceText);
-            return false;
-        }
-
-        // indicate read operation desired location
-        WritePort(dataPort, ecOffset);
-
-        // wait for IBF to clear (address byte removed from EC's input queue)
-        if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
-            DrainOutputBuffer(ctrlPort, dataPort);
-            sprintf_s(traceText, sizeof(traceText),
-                "readec: timed out #3 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
-                ctrlPort, dataPort, ecOffset);
-            this->Trace(traceText);
-            return false;
-        }
-
-        // wait for OBF to be SET (data ready to read)
-        if (!WaitForAnySet(ctrlPort, ACPI_EC_FLAG_OBF)) {
-            DrainOutputBuffer(ctrlPort, dataPort);
-            sprintf_s(traceText, sizeof(traceText),
-                "readec: timed out #4 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
-                ctrlPort, dataPort, ecOffset);
-            this->Trace(traceText);
-            return false;
-        }
-
-		*pdata = static_cast<char>(ReadPort(dataPort));
-        return true;
-    }
-
-    return false;
+	this->Trace("readec: FAILED - both ACPI_EC port types exhausted");
+	return false;
 }
 
 //-------------------------------------------------------------------------
@@ -242,76 +327,45 @@ FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
 //-------------------------------------------------------------------------
 bool
 FANCONTROL::WriteByteToEC(int offset, char NewData) {
-    UCHAR ecOffset = static_cast<UCHAR>(offset);
+	UCHAR ecOffset = static_cast<UCHAR>(offset);
 	const UCHAR ecData = static_cast<UCHAR>(NewData);
-    char traceText[160] = "";
+	char traceText[TRACE_BUFFER_SIZE] = "";
 
-    if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
-        InitializeEcPorts(this->EC_CTRL, this->EC_DATA);
-        this->Trace("Using ACPI_EC_TYPE1");
-    }
+	// Thread-safe initialization of EC ports
+	if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
+		// Consider adding lock here if multi-threaded access is expected
+		// SCOPED_LOCK lock(this->EcAccess);
+		if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
+			InitializeEcPorts(this->EC_CTRL, this->EC_DATA);
+			this->Trace("Using ACPI_EC_TYPE1");
+		}
+	}
 
-    for (int portAttempt = 0; portAttempt < 2; portAttempt++) {
-        const USHORT ctrlPort = static_cast<USHORT>(this->EC_CTRL);
-        const USHORT dataPort = static_cast<USHORT>(this->EC_DATA);
+	// Try each port type
+	for (int portAttempt = 0; portAttempt < MAX_PORT_ATTEMPTS; portAttempt++) {
+		const USHORT ctrlPort = static_cast<USHORT>(this->EC_CTRL);
+		const USHORT dataPort = static_cast<USHORT>(this->EC_DATA);
 
-        // wait for IBF and OBF to clear; drain stale OBF if present
-        if (!WaitForControllerReady(ctrlPort, dataPort)) {
-            sprintf_s(traceText, sizeof(traceText),
-                "writeec: timed out #1 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
-                ctrlPort, dataPort, ecOffset, ecData);
-            this->Trace(traceText);
+		// Attempt write operation
+		if (ExecuteEcWrite(ctrlPort, dataPort, ecOffset, ecData, traceText, sizeof(traceText), this)) {
+			// Log successful completion on port switch
+			if (portAttempt > 0) {
+				sprintf_s(traceText, sizeof(traceText),
+					"writeec: SUCCESS after port toggle to %s",
+					this->EC_CTRL == ACPI_EC_TYPE1_CTRLPORT ? "TYPE1" : "TYPE2");
+				this->Trace(traceText);
+			}
+			return true;
+		}
 
-            if (portAttempt == 0) {
-                ToggleEcPorts(this->EC_CTRL, this->EC_DATA);
-                this->Trace(this->EC_CTRL == ACPI_EC_TYPE1_CTRLPORT ? "Now using ACPI_EC_TYPE1" : "Now using ACPI_EC_TYPE2");
-                continue;
-            }
+		// Only toggle on first failure
+		if (portAttempt == 0) {
+			ToggleEcPorts(this->EC_CTRL, this->EC_DATA);
+			this->Trace(this->EC_CTRL == ACPI_EC_TYPE1_CTRLPORT ? 
+				"Attempting ACPI_EC_TYPE1" : "Attempting ACPI_EC_TYPE2");
+		}
+	}
 
-            return false;
-        }
-
-        // indicate write operation desired
-        WritePort(ctrlPort, ACPI_EC_COMMAND_WRITE);
-
-        // wait for IBF to clear (command byte removed from EC's input queue)
-        if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
-            DrainOutputBuffer(ctrlPort, dataPort);
-            sprintf_s(traceText, sizeof(traceText),
-                "writeec: timed out #2 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
-                ctrlPort, dataPort, ecOffset, ecData);
-            this->Trace(traceText);
-            return false;
-        }
-
-        // indicate write operation desired location
-        WritePort(dataPort, ecOffset);
-
-        // wait for IBF to clear (address byte removed from EC's input queue)
-        if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
-            DrainOutputBuffer(ctrlPort, dataPort);
-            sprintf_s(traceText, sizeof(traceText),
-                "writeec: timed out #3 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
-                ctrlPort, dataPort, ecOffset, ecData);
-            this->Trace(traceText);
-            return false;
-        }
-
-        // perform the write operation
-        WritePort(dataPort, ecData);
-
-        // wait for IBF to clear (data byte removed from EC's input queue)
-        if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
-            DrainOutputBuffer(ctrlPort, dataPort);
-            sprintf_s(traceText, sizeof(traceText),
-                "writeec: timed out #4 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
-                ctrlPort, dataPort, ecOffset, ecData);
-            this->Trace(traceText);
-            return false;
-        }
-
-        return true;
-    }
-
-    return false;
+	this->Trace("writeec: FAILED - both ACPI_EC port types exhausted");
+	return false;
 }
