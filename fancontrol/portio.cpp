@@ -127,9 +127,11 @@ static void
 DrainOutputBuffer(USHORT ctrlPort, USHORT dataPort) {
 	for (int i = 0; i < RECOVERY_DRAIN_READS; i++) {
 		const UCHAR status = ReadPort(ctrlPort);
+
 		if ((status & ACPI_EC_FLAG_OBF) == 0) break;
 
 		(void)ReadPort(dataPort);
+
 		::Sleep(DEFAULT_SLEEP_TICKS);
 	}
 }
