@@ -146,7 +146,6 @@ protected:
 		HK_TG_BM,
 		HK_TG_MS,
 		HK_TG_12;
-	int EC_CTRL, EC_DATA;
 	int BluetoothEDR;
 	int ManModeExit;
 	int ManModeExitInternal;
@@ -267,6 +266,7 @@ protected:
 	bool WriteByteToEC(int offset, char data);
 
 public:
+	int EC_CTRL, EC_DATA;
 
 	FANCONTROL(HINSTANCE hinstapp);
 

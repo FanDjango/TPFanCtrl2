@@ -85,6 +85,54 @@ InitializeEcPorts(int& ctrlPort, int& dataPort) {
 }
 
 //--------------------------------------------------------------------------
+// resolve a human-readable EC layout name for tracing
+//--------------------------------------------------------------------------
+static const char*
+GetEcLayoutName(int ctrlPort, int dataPort) {
+	for (const auto& layout : EC_PORT_LAYOUTS) {
+		if (layout.ctrl == ctrlPort && layout.data == dataPort) {
+			return layout.name;
+		}
+	}
+	return "ACPI_EC_UNKNOWN";
+}
+
+//--------------------------------------------------------------------------
+// build ordered EC layout attempts: current first, then remaining known ones
+//--------------------------------------------------------------------------
+static size_t
+BuildEcPortAttempts(
+	FANCONTROL* pThis,
+	EcPortLayout (&attempts)[EC_PORT_LAYOUT_COUNT],
+	char* traceText,
+	size_t traceSize) {
+	size_t attemptCount = 0;
+
+	if (pThis->EC_CTRL == 0 || pThis->EC_DATA == 0) {
+		InitializeEcPorts(pThis->EC_CTRL, pThis->EC_DATA);
+		sprintf_s(traceText, traceSize,
+			"Trying %s (ctrl=0x%04X data=0x%04X) first",
+			EC_PORT_LAYOUTS[0].name, EC_PORT_LAYOUTS[0].ctrl, EC_PORT_LAYOUTS[0].data);
+		pThis->Trace(traceText);
+	}
+
+	// First try currently selected ports
+	attempts[attemptCount++] = {
+		pThis->EC_CTRL,
+		pThis->EC_DATA,
+		GetEcLayoutName(pThis->EC_CTRL, pThis->EC_DATA)
+	};
+
+	// Then try the other known layouts
+	for (const auto& layout : EC_PORT_LAYOUTS) {
+		if (layout.ctrl == pThis->EC_CTRL && layout.data == pThis->EC_DATA) continue;
+		attempts[attemptCount++] = layout;
+	}
+
+	return attemptCount;
+}
+
+//--------------------------------------------------------------------------
 // wait until all requested bits are clear
 //--------------------------------------------------------------------------
 static bool
@@ -290,30 +338,7 @@ FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
 	const UCHAR ecOffset = static_cast<UCHAR>(offset);
 
 	EcPortLayout attempts[EC_PORT_LAYOUT_COUNT];
-	size_t attemptCount = 0;
-
-	{
-		if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
-			InitializeEcPorts(this->EC_CTRL, this->EC_DATA);
-			sprintf_s(traceText, sizeof(traceText), 
-				"Trying %s (ctrl=0x%04X data=0x%04X) first", 
-				EC_PORT_LAYOUTS[0].name, EC_PORT_LAYOUTS[0].ctrl, EC_PORT_LAYOUTS[0].data);
-			this->Trace(traceText);
-		}
-
-		// First try the currently selected ports
-		attempts[attemptCount++] = {
-			this->EC_CTRL,
-			this->EC_DATA,
-			this->EC_CTRL == ACPI_EC_TYPE1_CTRLPORT ? "ACPI_EC_TYPE1" : "ACPI_EC_TYPE2"
-		};
-
-		// Then try the other known layouts
-		for (const auto& layout : EC_PORT_LAYOUTS) {
-			if (layout.ctrl == this->EC_CTRL && layout.data == this->EC_DATA) continue;
-			attempts[attemptCount++] = layout;
-		}
-	}
+	const size_t attemptCount = BuildEcPortAttempts(this, attempts, traceText, sizeof(traceText));
 
 	for (size_t i = 0; i < attemptCount; i++) {
 		const auto& layout = attempts[i];
@@ -356,30 +381,7 @@ FANCONTROL::WriteByteToEC(int offset, char NewData) {
 	const UCHAR ecData = static_cast<UCHAR>(NewData);
 
 	EcPortLayout attempts[EC_PORT_LAYOUT_COUNT];
-	size_t attemptCount = 0;
-
-	{
-		if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
-			InitializeEcPorts(this->EC_CTRL, this->EC_DATA);
-			sprintf_s(traceText, sizeof(traceText),
-				"Trying %s (ctrl=0x%04X data=0x%04X) first",
-				EC_PORT_LAYOUTS[0].name, EC_PORT_LAYOUTS[0].ctrl, EC_PORT_LAYOUTS[0].data);
-			this->Trace(traceText);
-		}
-
-		// First try the currently selected ports
-		attempts[attemptCount++] = {
-			this->EC_CTRL,
-			this->EC_DATA,
-			this->EC_CTRL == ACPI_EC_TYPE1_CTRLPORT ? "ACPI_EC_TYPE1" : "ACPI_EC_TYPE2"
-		};
-
-		// Then try the other known layouts
-		for (const auto& layout : EC_PORT_LAYOUTS) {
-			if (layout.ctrl == this->EC_CTRL && layout.data == this->EC_DATA) continue;
-			attempts[attemptCount++] = layout;
-		}
-	}
+	const size_t attemptCount = BuildEcPortAttempts(this, attempts, traceText, sizeof(traceText));
 
 	for (size_t i = 0; i < attemptCount; i++) {
 		const auto& layout = attempts[i];
