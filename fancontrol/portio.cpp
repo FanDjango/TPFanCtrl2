@@ -85,21 +85,6 @@ InitializeEcPorts(int& ctrlPort, int& dataPort) {
 }
 
 //--------------------------------------------------------------------------
-// switch between known embedded controller port layouts
-//--------------------------------------------------------------------------
-static void
-ToggleEcPorts(int& ctrlPort, int& dataPort) {
-	if (ctrlPort == ACPI_EC_TYPE1_CTRLPORT) {
-		ctrlPort = ACPI_EC_TYPE2_CTRLPORT;
-		dataPort = ACPI_EC_TYPE2_DATAPORT;
-	}
-	else {
-		ctrlPort = ACPI_EC_TYPE1_CTRLPORT;
-		dataPort = ACPI_EC_TYPE1_DATAPORT;
-	}
-}
-
-//--------------------------------------------------------------------------
 // wait until all requested bits are clear
 //--------------------------------------------------------------------------
 static bool
@@ -310,7 +295,10 @@ FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
 	{
 		if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
 			InitializeEcPorts(this->EC_CTRL, this->EC_DATA);
-			this->Trace("Using ACPI_EC_TYPE1");
+			sprintf_s(traceText, sizeof(traceText), 
+				"Trying %s (ctrl=0x%04X data=0x%04X) first", 
+				EC_PORT_LAYOUTS[0].name, EC_PORT_LAYOUTS[0].ctrl, EC_PORT_LAYOUTS[0].data);
+			this->Trace(traceText);
 		}
 
 		// First try the currently selected ports
@@ -335,7 +323,7 @@ FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
 		if (ExecuteEcRead(ctrlPort, dataPort, ecOffset, *pdata, traceText, sizeof(traceText), this)) {
 			if (i > 0) {
 				sprintf_s(traceText, sizeof(traceText),
-					"readec: SUCCESS after port switch to %s (ctrl=0x%04X data=0x%04X)",
+					"readec: SUCCESS after layout switch to %s (ctrl=0x%04X data=0x%04X)",
 					layout.name, layout.ctrl, layout.data);
 				this->Trace(traceText);
 				this->EC_CTRL = layout.ctrl;
@@ -373,7 +361,10 @@ FANCONTROL::WriteByteToEC(int offset, char NewData) {
 	{
 		if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
 			InitializeEcPorts(this->EC_CTRL, this->EC_DATA);
-			this->Trace("Using ACPI_EC_TYPE1");
+			sprintf_s(traceText, sizeof(traceText),
+				"Trying %s (ctrl=0x%04X data=0x%04X) first",
+				EC_PORT_LAYOUTS[0].name, EC_PORT_LAYOUTS[0].ctrl, EC_PORT_LAYOUTS[0].data);
+			this->Trace(traceText);
 		}
 
 		// First try the currently selected ports
