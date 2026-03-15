@@ -41,6 +41,18 @@ constexpr auto ACPI_EC_TYPE1_DATAPORT = 0x1600;
 constexpr auto ACPI_EC_TYPE2_CTRLPORT = 0x66;
 constexpr auto ACPI_EC_TYPE2_DATAPORT = 0x62;
 
+struct EcPortLayout {
+	int ctrl;
+	int data;
+	const char* name;
+};
+
+constexpr EcPortLayout EC_PORT_LAYOUTS[] = {
+	{ ACPI_EC_TYPE1_CTRLPORT, ACPI_EC_TYPE1_DATAPORT, "ACPI_EC_TYPE1" },
+	{ ACPI_EC_TYPE2_CTRLPORT, ACPI_EC_TYPE2_DATAPORT, "ACPI_EC_TYPE2" },
+};
+constexpr size_t EC_PORT_LAYOUT_COUNT = sizeof(EC_PORT_LAYOUTS) / sizeof(EC_PORT_LAYOUTS[0]);
+
 // Embedded controller status register bits
 constexpr auto ACPI_EC_FLAG_OBF     = static_cast<UCHAR>(0x01);	/* Output buffer full */
 constexpr auto ACPI_EC_FLAG_IBF     = static_cast<UCHAR>(0x02);	/* Input buffer full */
@@ -59,7 +71,6 @@ constexpr auto ACPI_EC_COMMAND_QUERY = static_cast<UCHAR>(0x84);
 constexpr int DEFAULT_SLEEP_TICKS = 10;
 constexpr int DEFAULT_TIMEOUT_MS = 1000;
 constexpr int RECOVERY_DRAIN_READS = 8;
-constexpr int MAX_PORT_ATTEMPTS = 2;
 constexpr int TRACE_BUFFER_SIZE = 160;
 
 //--------------------------------------------------------------------------
@@ -69,8 +80,8 @@ static void
 InitializeEcPorts(int& ctrlPort, int& dataPort) {
 	if (ctrlPort != 0 && dataPort != 0) return;
 
-	ctrlPort = ACPI_EC_TYPE1_CTRLPORT;
-	dataPort = ACPI_EC_TYPE1_DATAPORT;
+	ctrlPort = EC_PORT_LAYOUTS[0].ctrl;
+	dataPort = EC_PORT_LAYOUTS[0].data;
 }
 
 //--------------------------------------------------------------------------
@@ -113,6 +124,7 @@ WaitForAnySet(USHORT port, UCHAR flags, int timeout = DEFAULT_TIMEOUT_MS) {
 	if (timeout < 0) timeout = DEFAULT_TIMEOUT_MS;
 
 	const DWORD start = ::GetTickCount();
+	const ULONGLONG timeoutMs = static_cast<ULONGLONG>(timeout);
 
 	for (;;) {
 		const UCHAR data = ReadPort(port);
@@ -171,9 +183,10 @@ static bool
 ExecuteEcRead(USHORT ctrlPort, USHORT dataPort, UCHAR ecOffset, char& outData, char* traceText, size_t traceSize, FANCONTROL* pThis) {
 	// wait for IBF and OBF to clear; drain stale OBF if present
 	if (!WaitForControllerReady(ctrlPort, dataPort)) {
+		const UCHAR status = ReadPort(ctrlPort);
 		sprintf_s(traceText, traceSize,
-			"readec: timed out #1 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
-			ctrlPort, dataPort, ecOffset);
+			"readec: timed out #1 (ctrl=0x%04X data=0x%04X offset=0x%02X status=0x%02X)",
+			ctrlPort, dataPort, ecOffset, status);
 		pThis->Trace(traceText);
 		return false;
 	}
@@ -184,9 +197,10 @@ ExecuteEcRead(USHORT ctrlPort, USHORT dataPort, UCHAR ecOffset, char& outData, c
 	// wait for IBF to clear (command byte removed from EC's input queue)
 	if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
 		DrainOutputBuffer(ctrlPort, dataPort);
+		const UCHAR status = ReadPort(ctrlPort);
 		sprintf_s(traceText, traceSize,
-			"readec: timed out #2 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
-			ctrlPort, dataPort, ecOffset);
+			"readec: timed out #2 (ctrl=0x%04X data=0x%04X offset=0x%02X status=0x%02X)",
+			ctrlPort, dataPort, ecOffset, status);
 		pThis->Trace(traceText);
 		return false;
 	}
@@ -197,9 +211,10 @@ ExecuteEcRead(USHORT ctrlPort, USHORT dataPort, UCHAR ecOffset, char& outData, c
 	// wait for IBF to clear (address byte removed from EC's input queue)
 	if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
 		DrainOutputBuffer(ctrlPort, dataPort);
+		const UCHAR status = ReadPort(ctrlPort);
 		sprintf_s(traceText, traceSize,
-			"readec: timed out #3 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
-			ctrlPort, dataPort, ecOffset);
+			"readec: timed out #3 (ctrl=0x%04X data=0x%04X offset=0x%02X status=0x%02X)",
+			ctrlPort, dataPort, ecOffset, status);
 		pThis->Trace(traceText);
 		return false;
 	}
@@ -207,9 +222,10 @@ ExecuteEcRead(USHORT ctrlPort, USHORT dataPort, UCHAR ecOffset, char& outData, c
 	// wait for OBF to be SET (data ready to read)
 	if (!WaitForAnySet(ctrlPort, ACPI_EC_FLAG_OBF)) {
 		DrainOutputBuffer(ctrlPort, dataPort);
+		const UCHAR status = ReadPort(ctrlPort);
 		sprintf_s(traceText, traceSize,
-			"readec: timed out #4 (ctrl=0x%04X data=0x%04X offset=0x%02X)",
-			ctrlPort, dataPort, ecOffset);
+			"readec: timed out #4 (ctrl=0x%04X data=0x%04X offset=0x%02X status=0x%02X)",
+			ctrlPort, dataPort, ecOffset, status);
 		pThis->Trace(traceText);
 		return false;
 	}
@@ -226,9 +242,10 @@ static bool
 ExecuteEcWrite(USHORT ctrlPort, USHORT dataPort, UCHAR ecOffset, UCHAR ecData, char* traceText, size_t traceSize, FANCONTROL* pThis) {
 	// wait for IBF and OBF to clear; drain stale OBF if present
 	if (!WaitForControllerReady(ctrlPort, dataPort)) {
+		const UCHAR status = ReadPort(ctrlPort);
 		sprintf_s(traceText, traceSize,
-			"writeec: timed out #1 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
-			ctrlPort, dataPort, ecOffset, ecData);
+			"writeec: timed out #1 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X status=0x%02X)",
+			ctrlPort, dataPort, ecOffset, ecData, status);
 		pThis->Trace(traceText);
 		return false;
 	}
@@ -239,9 +256,10 @@ ExecuteEcWrite(USHORT ctrlPort, USHORT dataPort, UCHAR ecOffset, UCHAR ecData, c
 	// wait for IBF to clear (command byte removed from EC's input queue)
 	if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
 		DrainOutputBuffer(ctrlPort, dataPort);
+		const UCHAR status = ReadPort(ctrlPort);
 		sprintf_s(traceText, traceSize,
-			"writeec: timed out #2 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
-			ctrlPort, dataPort, ecOffset, ecData);
+			"writeec: timed out #2 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X status=0x%02X)",
+			ctrlPort, dataPort, ecOffset, ecData, status);
 		pThis->Trace(traceText);
 		return false;
 	}
@@ -252,9 +270,10 @@ ExecuteEcWrite(USHORT ctrlPort, USHORT dataPort, UCHAR ecOffset, UCHAR ecData, c
 	// wait for IBF to clear (address byte removed from EC's input queue)
 	if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
 		DrainOutputBuffer(ctrlPort, dataPort);
+		const UCHAR status = ReadPort(ctrlPort);
 		sprintf_s(traceText, traceSize,
-			"writeec: timed out #3 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
-			ctrlPort, dataPort, ecOffset, ecData);
+			"writeec: timed out #3 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X status=0x%02X)",
+			ctrlPort, dataPort, ecOffset, ecData, status);
 		pThis->Trace(traceText);
 		return false;
 	}
@@ -265,9 +284,10 @@ ExecuteEcWrite(USHORT ctrlPort, USHORT dataPort, UCHAR ecOffset, UCHAR ecData, c
 	// wait for IBF to clear (data byte removed from EC's input queue)
 	if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
 		DrainOutputBuffer(ctrlPort, dataPort);
+		const UCHAR status = ReadPort(ctrlPort);
 		sprintf_s(traceText, traceSize,
-			"writeec: timed out #4 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X)",
-			ctrlPort, dataPort, ecOffset, ecData);
+			"writeec: timed out #4 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X status=0x%02X)",
+			ctrlPort, dataPort, ecOffset, ecData, status);
 		pThis->Trace(traceText);
 		return false;
 	}
@@ -280,45 +300,60 @@ ExecuteEcWrite(USHORT ctrlPort, USHORT dataPort, UCHAR ecOffset, UCHAR ecData, c
 //-------------------------------------------------------------------------
 bool
 FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
-	UCHAR ecOffset = static_cast<UCHAR>(offset);
 	char traceText[TRACE_BUFFER_SIZE] = "";
 
-	// Thread-safe initialization of EC ports
-	if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
-		// Consider adding lock here if multi-threaded access is expected
-		// SCOPED_LOCK lock(this->EcAccess);
+	const UCHAR ecOffset = static_cast<UCHAR>(offset);
+
+	EcPortLayout attempts[EC_PORT_LAYOUT_COUNT];
+	size_t attemptCount = 0;
+
+	{
 		if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
 			InitializeEcPorts(this->EC_CTRL, this->EC_DATA);
 			this->Trace("Using ACPI_EC_TYPE1");
 		}
+
+		// First try the currently selected ports
+		attempts[attemptCount++] = {
+			this->EC_CTRL,
+			this->EC_DATA,
+			this->EC_CTRL == ACPI_EC_TYPE1_CTRLPORT ? "ACPI_EC_TYPE1" : "ACPI_EC_TYPE2"
+		};
+
+		// Then try the other known layouts
+		for (const auto& layout : EC_PORT_LAYOUTS) {
+			if (layout.ctrl == this->EC_CTRL && layout.data == this->EC_DATA) continue;
+			attempts[attemptCount++] = layout;
+		}
 	}
 
-	// Try each port type
-	for (int portAttempt = 0; portAttempt < MAX_PORT_ATTEMPTS; portAttempt++) {
-		const USHORT ctrlPort = static_cast<USHORT>(this->EC_CTRL);
-		const USHORT dataPort = static_cast<USHORT>(this->EC_DATA);
+	for (size_t i = 0; i < attemptCount; i++) {
+		const auto& layout = attempts[i];
+		const USHORT ctrlPort = static_cast<USHORT>(layout.ctrl);
+		const USHORT dataPort = static_cast<USHORT>(layout.data);
 
-		// Attempt read operation
 		if (ExecuteEcRead(ctrlPort, dataPort, ecOffset, *pdata, traceText, sizeof(traceText), this)) {
-			// Log successful completion on port switch
-			if (portAttempt > 0) {
+			if (i > 0) {
 				sprintf_s(traceText, sizeof(traceText),
-					"readec: SUCCESS after port toggle to %s",
-					this->EC_CTRL == ACPI_EC_TYPE1_CTRLPORT ? "TYPE1" : "TYPE2");
+					"readec: SUCCESS after port switch to %s (ctrl=0x%04X data=0x%04X)",
+					layout.name, layout.ctrl, layout.data);
 				this->Trace(traceText);
+				this->EC_CTRL = layout.ctrl;
+				this->EC_DATA = layout.data;
 			}
 			return true;
 		}
 
-		// Only toggle on first failure
-		if (portAttempt == 0) {
-			ToggleEcPorts(this->EC_CTRL, this->EC_DATA);
-			this->Trace(this->EC_CTRL == ACPI_EC_TYPE1_CTRLPORT ? 
-				"Attempting ACPI_EC_TYPE1" : "Attempting ACPI_EC_TYPE2");
+		if (i + 1 < attemptCount) {
+			const auto& nextLayout = attempts[i + 1];
+			sprintf_s(traceText, sizeof(traceText),
+				"readec: switching to %s (ctrl=0x%04X data=0x%04X)",
+				nextLayout.name, nextLayout.ctrl, nextLayout.data);
+			this->Trace(traceText);
 		}
 	}
 
-	this->Trace("readec: FAILED - both ACPI_EC port types exhausted");
+	this->Trace("readec: FAILED - all ACPI_EC port layouts exhausted");
 	return false;
 }
 
@@ -327,45 +362,60 @@ FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
 //-------------------------------------------------------------------------
 bool
 FANCONTROL::WriteByteToEC(int offset, char NewData) {
-	UCHAR ecOffset = static_cast<UCHAR>(offset);
-	const UCHAR ecData = static_cast<UCHAR>(NewData);
 	char traceText[TRACE_BUFFER_SIZE] = "";
 
-	// Thread-safe initialization of EC ports
-	if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
-		// Consider adding lock here if multi-threaded access is expected
-		// SCOPED_LOCK lock(this->EcAccess);
+	const UCHAR ecOffset = static_cast<UCHAR>(offset);
+	const UCHAR ecData = static_cast<UCHAR>(NewData);
+
+	EcPortLayout attempts[EC_PORT_LAYOUT_COUNT];
+	size_t attemptCount = 0;
+
+	{
 		if (this->EC_CTRL == 0 || this->EC_DATA == 0) {
 			InitializeEcPorts(this->EC_CTRL, this->EC_DATA);
 			this->Trace("Using ACPI_EC_TYPE1");
 		}
+
+		// First try the currently selected ports
+		attempts[attemptCount++] = {
+			this->EC_CTRL,
+			this->EC_DATA,
+			this->EC_CTRL == ACPI_EC_TYPE1_CTRLPORT ? "ACPI_EC_TYPE1" : "ACPI_EC_TYPE2"
+		};
+
+		// Then try the other known layouts
+		for (const auto& layout : EC_PORT_LAYOUTS) {
+			if (layout.ctrl == this->EC_CTRL && layout.data == this->EC_DATA) continue;
+			attempts[attemptCount++] = layout;
+		}
 	}
 
-	// Try each port type
-	for (int portAttempt = 0; portAttempt < MAX_PORT_ATTEMPTS; portAttempt++) {
-		const USHORT ctrlPort = static_cast<USHORT>(this->EC_CTRL);
-		const USHORT dataPort = static_cast<USHORT>(this->EC_DATA);
+	for (size_t i = 0; i < attemptCount; i++) {
+		const auto& layout = attempts[i];
+		const USHORT ctrlPort = static_cast<USHORT>(layout.ctrl);
+		const USHORT dataPort = static_cast<USHORT>(layout.data);
 
-		// Attempt write operation
 		if (ExecuteEcWrite(ctrlPort, dataPort, ecOffset, ecData, traceText, sizeof(traceText), this)) {
-			// Log successful completion on port switch
-			if (portAttempt > 0) {
+			if (i > 0) {
 				sprintf_s(traceText, sizeof(traceText),
-					"writeec: SUCCESS after port toggle to %s",
-					this->EC_CTRL == ACPI_EC_TYPE1_CTRLPORT ? "TYPE1" : "TYPE2");
+					"writeec: SUCCESS after port switch to %s (ctrl=0x%04X data=0x%04X)",
+					layout.name, layout.ctrl, layout.data);
 				this->Trace(traceText);
+				this->EC_CTRL = layout.ctrl;
+				this->EC_DATA = layout.data;
 			}
 			return true;
 		}
 
-		// Only toggle on first failure
-		if (portAttempt == 0) {
-			ToggleEcPorts(this->EC_CTRL, this->EC_DATA);
-			this->Trace(this->EC_CTRL == ACPI_EC_TYPE1_CTRLPORT ? 
-				"Attempting ACPI_EC_TYPE1" : "Attempting ACPI_EC_TYPE2");
+		if (i + 1 < attemptCount) {
+			const auto& nextLayout = attempts[i + 1];
+			sprintf_s(traceText, sizeof(traceText),
+				"writeec: switching to %s (ctrl=0x%04X data=0x%04X)",
+				nextLayout.name, nextLayout.ctrl, nextLayout.data);
+			this->Trace(traceText);
 		}
 	}
 
-	this->Trace("writeec: FAILED - both ACPI_EC port types exhausted");
+	this->Trace("writeec: FAILED - all ACPI_EC port layouts exhausted");
 	return false;
 }
