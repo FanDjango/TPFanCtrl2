@@ -146,7 +146,6 @@ protected:
 		HK_TG_BM,
 		HK_TG_MS,
 		HK_TG_12;
-	int EC_CTRL, EC_DATA;
 	int BluetoothEDR;
 	int ManModeExit;
 	int ManModeExitInternal;
@@ -183,6 +182,7 @@ protected:
 	char CurrentStatuscsv[256];
 
 	// dialog.cpp
+
 	int CurrentModeFromDialog();
 
 	int ShowAllFromDialog();
@@ -215,6 +215,7 @@ protected:
 	int WorkThread();
 
 	// fancontrol.cpp
+
 	bool LockECAccess();
 
 	void FreeECAccess();
@@ -240,9 +241,8 @@ protected:
 	int previousModeBeforeLidClose = -1;
 
 	// misc.cpp
-	int ReadConfig(const char* filename);
 
-	void Trace(const char* text);
+	int ReadConfig(const char* filename);
 
 	void Tracecsv(const char* textcsv);
 
@@ -260,11 +260,13 @@ protected:
 	);
 
 	// portio.cpp
+
 	bool ReadByteFromEC(int offset, char* pdata);
 
 	bool WriteByteToEC(int offset, char data);
 
 public:
+	int EC_CTRL, EC_DATA;
 
 	FANCONTROL(HINSTANCE hinstapp);
 
@@ -280,6 +282,8 @@ public:
 	void ProcessTextIcons(void);
 
 	void RemoveTextIcons(void);
+
+	void Trace(const char* text);
 };
 
 #endif // FANCONTROL_H
