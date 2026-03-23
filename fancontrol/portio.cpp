@@ -343,10 +343,8 @@ FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
 
 	for (size_t i = 0; i < attemptCount; i++) {
 		const auto& layout = attempts[i];
-		const USHORT ctrlPort = static_cast<USHORT>(layout.ctrl);
-		const USHORT dataPort = static_cast<USHORT>(layout.data);
 
-		if (ExecuteEcRead(ctrlPort, dataPort, ecOffset, *pdata, traceText, sizeof(traceText), this)) {
+		if (ExecuteEcRead(layout.ctrl, layout.data, ecOffset, *pdata, traceText, sizeof(traceText), this)) {
 			if (i > 0) {
 				sprintf_s(traceText, sizeof(traceText),
 					"readec: SUCCESS after layout switch to %s (ctrl=0x%04X data=0x%04X)",
@@ -386,10 +384,8 @@ FANCONTROL::WriteByteToEC(int offset, char NewData) {
 
 	for (size_t i = 0; i < attemptCount; i++) {
 		const auto& layout = attempts[i];
-		const USHORT ctrlPort = static_cast<USHORT>(layout.ctrl);
-		const USHORT dataPort = static_cast<USHORT>(layout.data);
 
-		if (ExecuteEcWrite(ctrlPort, dataPort, ecOffset, ecData, traceText, sizeof(traceText), this)) {
+		if (ExecuteEcWrite(layout.ctrl, layout.data, ecOffset, ecData, traceText, sizeof(traceText), this)) {
 			if (i > 0) {
 				sprintf_s(traceText, sizeof(traceText),
 					"writeec: SUCCESS after port switch to %s (ctrl=0x%04X data=0x%04X)",
