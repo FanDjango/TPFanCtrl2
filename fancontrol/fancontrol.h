@@ -101,9 +101,10 @@ protected:
 	int ReIcCycle;
 	int NoExtSensor;
 	int FanSpeedLowByte;
-	int ActiveMode,
-		SingleFan = false,
-		UseTWR,
+	int ActiveMode;
+	int SingleFan;
+	int LidClosedMode;
+	int UseTWR,
 		ManFanSpeed,
 		FinalSeen;
 	int CurrentMode, fanctrl2,
@@ -125,7 +126,6 @@ protected:
 	int MaxReadErrors;
 	int SecWinUptime;
 	int SecStartDelay;
-	int LidClosedMode = 1;
 	int SlimDialog;
 	int NoBallons,
 		HK_BIOS_Method,
@@ -239,6 +239,7 @@ protected:
 	bool isLidClosed = false;
 
 	int previousModeBeforeLidClose = -1;
+	int previousModeBeforeSuspend = -1;
 
 	// misc.cpp
 

@@ -62,11 +62,6 @@ FANCONTROL::ReadConfig(const char* configfile)
 			if (buf[0] == '/' || buf[0] == '#' || buf[0] == ';')
 				continue;
 
-			if (_strnicmp(buf, "SingleFan=", 10) == 0) {
-				this->SingleFan = atoi(buf + 10);
-				continue;
-			}
-
 			if (_strnicmp(buf, "UseTWR=", 7) == 0) {
 				this->UseTWR = atoi(buf + 7);
 				continue;
@@ -299,8 +294,14 @@ FANCONTROL::ReadConfig(const char* configfile)
 			// 1 -> Switch to BIOS mode with lid closed
 			// 2 -> Continue auto mode with lid closed
 			// 3 -> Switch to manual mode and turn fans off
+			// 4 -> Switch to manual mode and turn fans off on any power suspend event, regardless of lid is open/close
 			if (_strnicmp(buf, "LidClosedMode=", 14) == 0) {
 				this->LidClosedMode = atoi(buf + 14);
+				continue;
+			}
+
+			if (_strnicmp(buf, "SingleFan=", 10) == 0) {
+				this->SingleFan = atoi(buf + 10);
 				continue;
 			}
 
@@ -566,6 +567,9 @@ FANCONTROL::ReadConfig(const char* configfile)
 	//
 	// display config
 	//
+	sprintf_s(buf, sizeof(buf), "  SingleFan= %d, LidClosedMode= %d", this->SingleFan, this->LidClosedMode);
+	this->Trace(buf);
+
 	if (this->IconCycle <= 0 || this->IconCycle >= 60) this->IconCycle = 1;
 	sprintf_s(buf, sizeof(buf), "  Active= %d, Cycle= %d, FanBeep= %d %d, MaxReadErrors= %d",
 		this->ActiveMode, this->Cycle,

@@ -71,7 +71,7 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	ShowBiasedTemps(0),
 	SecWinUptime(0),
 	SecStartDelay(0),
-	LidClosedMode(1), // 1 BIOS, 2 Auto
+	LidClosedMode(1), // 1 BIOS, 2 Auto, 3 Manual, 4 Manual on any suspend
 	SlimDialog(0),
 	Log2File(0),
 	StayOnTop(0),
@@ -1065,7 +1065,25 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 		break;
 
 	case WM_POWERBROADCAST:
-		if (mp1 == PBT_POWERSETTINGCHANGE) {
+		if (mp1 == PBT_APMSUSPEND) {
+			this->Trace("System suspension detected");
+			if (this->LidClosedMode == 4) {
+				this->previousModeBeforeSuspend = this->CurrentMode;
+				this->ModeToDialog(3);
+				ok = this->SetFan("Switched to manual mode and turned fans off", 0x00);
+			}
+		}
+		else if (mp1 == PBT_APMRESUMEAUTOMATIC) {
+			this->Trace("System resume detected");
+			if (this->LidClosedMode == 4) {
+				if (this->previousModeBeforeSuspend != this->CurrentMode) {
+					Sleep(1000);
+					this->ModeToDialog(this->previousModeBeforeSuspend);
+					this->Trace("Switched to previous mode");
+				}
+			}
+		}
+		else if (mp1 == PBT_POWERSETTINGCHANGE) {
 			POWERBROADCAST_SETTING* pbs = (POWERBROADCAST_SETTING*)mp2;
 			if (pbs->PowerSetting == GUID_LIDSWITCH_STATE_CHANGE) {
 				BYTE state = *(BYTE*)(&pbs->Data);
@@ -1083,6 +1101,8 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 						ok = this->SetFan("Switched to BIOS mode", 0x80);
 						if (ok)	::Sleep(1000);
 					}
+					else if (this->LidClosedMode == 4) {
+					}
 					else {
 						this->Trace("Continuing auto mode with lid closed");
 					}
@@ -1090,9 +1110,11 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 				else { // Lid opened
 					if (this->isLidClosed) {
 						this->Trace("Lid open detected");
-						if (this->previousModeBeforeLidClose != this->CurrentMode) {
-							this->ModeToDialog(this->previousModeBeforeLidClose);
-							this->Trace("Switched to previous mode");
+						if (this->LidClosedMode != 4) {
+							if (this->previousModeBeforeLidClose != this->CurrentMode) {
+								this->ModeToDialog(this->previousModeBeforeLidClose);
+								this->Trace("Switched to previous mode");
+							}
 						}
 						this->isLidClosed = false;
 					}
@@ -1167,13 +1189,6 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 		}
 
 		ok = mp1;  // equivalent of "ok = this->ReadEcStatus(&this->State);" via thread
-
-		// Notifies program if pending suspension operation has occurred.
-		if (!DefWindowProc(this->hwndDialog, WM_POWERBROADCAST, PBT_APMSUSPEND, NULL)) {
-			this->Trace("Systen suspension detected, closing to BIOS mode");
-			::Sleep(1000);
-			::SendMessage(this->hwndDialog, WM_ENDSESSION, 0, 0);
-		}
 
 		if (ok) {
 			this->ReadErrorCount = 0;
