@@ -1070,7 +1070,8 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 			if (this->LidClosedMode == 4) {
 				this->previousModeBeforeSuspend = this->CurrentMode;
 				this->ModeToDialog(3);
-				ok = this->SetFan("Switched to manual mode and turned fans off", 0x00);
+				ok = this->SetFan("Switched to manual mode and turned fans off(4)", 0x00);
+				if (ok)	::Sleep(1000);
 			}
 		}
 		else if (mp1 == PBT_APMRESUMEAUTOMATIC) {
@@ -1079,7 +1080,8 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 				if (this->previousModeBeforeSuspend != this->CurrentMode) {
 					Sleep(1000);
 					this->ModeToDialog(this->previousModeBeforeSuspend);
-					this->Trace("Switched to previous mode");
+					Sleep(1000);
+					this->Trace("Switched to previous mode(4)");
 				}
 			}
 		}
@@ -1093,18 +1095,18 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 					this->Trace("Lid close detected");
 					if (this->LidClosedMode == 3) {
 						this->ModeToDialog(3);
-						ok = this->SetFan("Switched to manual mode and turned fans off", 0x00);
+						ok = this->SetFan("Switched to manual mode and turned fans off(3)", 0x00);
 						if (ok)	::Sleep(1000);
 					}
 					else if (this->LidClosedMode == 1) {
 						this->ModeToDialog(1);
-						ok = this->SetFan("Switched to BIOS mode", 0x80);
+						ok = this->SetFan("Switched to BIOS mode(1)", 0x80);
 						if (ok)	::Sleep(1000);
 					}
 					else if (this->LidClosedMode == 4) {
 					}
 					else {
-						this->Trace("Continuing auto mode with lid closed");
+						this->Trace("Continuing auto mode with lid closed(2)");
 					}
 				}
 				else { // Lid opened
@@ -1113,7 +1115,7 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 						if (this->LidClosedMode != 4) {
 							if (this->previousModeBeforeLidClose != this->CurrentMode) {
 								this->ModeToDialog(this->previousModeBeforeLidClose);
-								this->Trace("Switched to previous mode");
+								this->Trace("Switched to previous mode(!=4)");
 							}
 						}
 						this->isLidClosed = false;
