@@ -1078,7 +1078,7 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 			this->Trace("System resume detected");
 			if (this->LidClosedMode == 4) {
 				if (this->previousModeBeforeSuspend != this->CurrentMode) {
-					Sleep(1000);
+					Sleep(5000);
 					this->ModeToDialog(this->previousModeBeforeSuspend);
 					Sleep(1000);
 					this->Trace("Switched to previous mode(4)");
