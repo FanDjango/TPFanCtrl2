@@ -71,6 +71,7 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	ShowBiasedTemps(0),
 	SecWinUptime(0),
 	SecStartDelay(0),
+	SingleFan(0),
 	LidClosedMode(1), // 1 BIOS, 2 Auto, 3 Manual, 4 Manual on any suspend
 	SlimDialog(0),
 	Log2File(0),

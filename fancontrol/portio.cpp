@@ -71,7 +71,10 @@ constexpr auto ACPI_EC_COMMAND_QUERY = static_cast<UCHAR>(0x84);
 constexpr int DEFAULT_SLEEP_TICKS = 10;
 constexpr int DEFAULT_TIMEOUT_MS = 1000;
 constexpr int RECOVERY_DRAIN_READS = 8;
+
 constexpr int TRACE_BUFFER_SIZE = 160;
+
+constexpr bool STRICT_EC_READ_OBF_HANDLING = false;
 
 //--------------------------------------------------------------------------
 // initialize embedded controller ports if not yet selected
@@ -103,7 +106,8 @@ GetEcLayoutName(int ctrlPort, int dataPort) {
 static size_t
 BuildEcPortAttempts(
 	FANCONTROL* pThis,
-	EcPortLayout (&attempts)[EC_PORT_LAYOUT_COUNT],
+	EcPortLayout* attempts,
+	size_t maxAttempts,
 	char* traceText,
 	size_t traceSize) {
 	size_t attemptCount = 0;
@@ -117,15 +121,18 @@ BuildEcPortAttempts(
 	}
 
 	// First try currently selected ports
-	attempts[attemptCount++] = {
-		pThis->EC_CTRL,
-		pThis->EC_DATA,
-		GetEcLayoutName(pThis->EC_CTRL, pThis->EC_DATA)
-	};
+	if (attemptCount < maxAttempts) {
+		attempts[attemptCount++] = {
+			pThis->EC_CTRL,
+			pThis->EC_DATA,
+			GetEcLayoutName(pThis->EC_CTRL, pThis->EC_DATA)
+		};
+	}
 
 	// Then try the other known layouts
 	for (const auto& layout : EC_PORT_LAYOUTS) {
 		if (layout.ctrl == pThis->EC_CTRL && layout.data == pThis->EC_DATA) continue;
+		if (attemptCount >= maxAttempts) break;
 		attempts[attemptCount++] = layout;
 	}
 
@@ -154,8 +161,6 @@ WaitForAllClear(USHORT port, UCHAR flags, int timeout = DEFAULT_TIMEOUT_MS) {
 //--------------------------------------------------------------------------
 static bool
 WaitForAnySet(USHORT port, UCHAR flags, int timeout = DEFAULT_TIMEOUT_MS) {
-	if (timeout < 0) timeout = DEFAULT_TIMEOUT_MS;
-
 	const DWORD start = ::GetTickCount();
 
 	for (;;) {
@@ -187,8 +192,6 @@ DrainOutputBuffer(USHORT ctrlPort, USHORT dataPort) {
 //--------------------------------------------------------------------------
 static bool
 WaitForControllerReady(USHORT ctrlPort, USHORT dataPort, int timeout = DEFAULT_TIMEOUT_MS) {
-	if (timeout < 0) timeout = DEFAULT_TIMEOUT_MS;
-
 	const DWORD start = ::GetTickCount();
 
 	for (;;) {
@@ -251,15 +254,17 @@ ExecuteEcRead(USHORT ctrlPort, USHORT dataPort, UCHAR ecOffset, char& outData, c
 		return false;
 	}
 
-	// wait for OBF to be SET (data ready to read)
-	if (!WaitForAnySet(ctrlPort, ACPI_EC_FLAG_OBF)) {
-		DrainOutputBuffer(ctrlPort, dataPort);
-		const UCHAR status = ReadPort(ctrlPort);
-		sprintf_s(traceText, traceSize,
-			"readec: timed out #4 (ctrl=0x%04X data=0x%04X offset=0x%02X status=0x%02X)",
-			ctrlPort, dataPort, ecOffset, status);
-		pThis->Trace(traceText);
-		return false;
+	if (STRICT_EC_READ_OBF_HANDLING) {
+		// wait for OBF to be SET (data ready to read)
+		if (!WaitForAnySet(ctrlPort, ACPI_EC_FLAG_OBF)) {
+			DrainOutputBuffer(ctrlPort, dataPort);
+			const UCHAR status = ReadPort(ctrlPort);
+			sprintf_s(traceText, traceSize,
+				"readec: timed out #4 (ctrl=0x%04X data=0x%04X offset=0x%02X status=0x%02X)",
+				ctrlPort, dataPort, ecOffset, status);
+			pThis->Trace(traceText);
+			return false;
+		}
 	}
 
 	outData = static_cast<char>(ReadPort(dataPort));
@@ -337,8 +342,8 @@ FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
 
 	const UCHAR ecOffset = static_cast<UCHAR>(offset);
 
-	EcPortLayout attempts[EC_PORT_LAYOUT_COUNT];
-	const size_t attemptCount = BuildEcPortAttempts(this, attempts, traceText, sizeof(traceText));
+	EcPortLayout attempts[EC_PORT_LAYOUT_COUNT + 1];
+	const size_t attemptCount = BuildEcPortAttempts(this, attempts, ARRAYMAX(attempts), traceText, sizeof(traceText));
 
 	for (size_t i = 0; i < attemptCount; i++) {
 		const auto& layout = attempts[i];
@@ -378,8 +383,8 @@ FANCONTROL::WriteByteToEC(int offset, char NewData) {
 	const UCHAR ecOffset = static_cast<UCHAR>(offset);
 	const UCHAR ecData = static_cast<UCHAR>(NewData);
 
-	EcPortLayout attempts[EC_PORT_LAYOUT_COUNT];
-	const size_t attemptCount = BuildEcPortAttempts(this, attempts, traceText, sizeof(traceText));
+	EcPortLayout attempts[EC_PORT_LAYOUT_COUNT + 1];
+	const size_t attemptCount = BuildEcPortAttempts(this, attempts, ARRAYMAX(attempts), traceText, sizeof(traceText));
 
 	for (size_t i = 0; i < attemptCount; i++) {
 		const auto& layout = attempts[i];
