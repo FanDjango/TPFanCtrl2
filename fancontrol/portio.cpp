@@ -157,7 +157,6 @@ WaitForAnySet(USHORT port, UCHAR flags, int timeout = DEFAULT_TIMEOUT_MS) {
 	if (timeout < 0) timeout = DEFAULT_TIMEOUT_MS;
 
 	const DWORD start = ::GetTickCount();
-	const ULONGLONG timeoutMs = static_cast<ULONGLONG>(timeout);
 
 	for (;;) {
 		const UCHAR data = ReadPort(port);
