@@ -19,6 +19,10 @@
 #include "tools.h"
 #include "taskbartexticon.h"
 #include "sysinfoapi.h"
+#include <vector>
+#include <string>
+#include <winevt.h>
+#pragma comment(lib, "wevtapi.lib")
 
 DEFINE_GUID(GUID_LIDSWITCH_STATE_CHANGE,
 	0xba3e0f4d, 0xb817, 0x4094,
@@ -31,6 +35,7 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	: 
 	hinstapp(NULL),
 	hwndDialog(NULL),
+	hEventSubscription(NULL),
 	CurrentMode(-1),
 	PreviousMode(-1),
 	Cycle(5),
@@ -223,6 +228,29 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 
 		this->hPowerNotify = RegisterPowerSettingNotification(this->hwndDialog, &GUID_LIDSWITCH_STATE_CHANGE, DEVICE_NOTIFY_WINDOW_HANDLE);
 
+		// Subscribe to Modern Standby events (EventId 506 = Entry, 507 = Exit)
+		// These events are in the System log from Microsoft-Windows-Kernel-Power
+		const wchar_t* query = L"*[System[Provider[@Name='Microsoft-Windows-Kernel-Power'] and (EventID=506 or EventID=507)]]";
+		this->hEventSubscription = EvtSubscribe(
+			NULL,                           // Session (local)
+			NULL,                           // SignalEvent
+			L"System",                      // Channel path
+			query,                          // Query
+			NULL,                           // Bookmark
+			this,                           // Context (pass FANCONTROL pointer)
+			(EVT_SUBSCRIBE_CALLBACK)FANCONTROL::EventLogCallback,
+			EvtSubscribeToFutureEvents      // Flags
+		);
+
+		if (this->hEventSubscription == NULL) {
+			char errBuf[128];
+			sprintf_s(errBuf, sizeof(errBuf), "Failed to subscribe to Modern Standby events, error: %lu", GetLastError());
+			this->Trace(errBuf);
+		}
+		else {
+			this->Trace("Subscribed to Modern Standby events (EventId 506/507)");
+		}
+
 		if (SlimDialog == 1) {
 			if (this->StayOnTop)
 				this->hwndDialog = ::CreateDialogParam(hinstapp,
@@ -343,6 +371,11 @@ FANCONTROL::~FANCONTROL() {
 		ppTbTextIcon = NULL;
 	}
 
+	if (this->hEventSubscription) {
+		EvtClose(this->hEventSubscription);
+		this->hEventSubscription = NULL;
+	}
+
 	UnregisterPowerSettingNotification(this->hPowerNotify);
 
 	if (this->hwndDialog)
@@ -350,6 +383,58 @@ FANCONTROL::~FANCONTROL() {
 
 	if (pTextIconMutex)
 		delete pTextIconMutex;
+}
+
+//-------------------------------------------------------------------------
+//  Event log callback for Modern Standby events
+//-------------------------------------------------------------------------
+DWORD WINAPI FANCONTROL::EventLogCallback(EVT_SUBSCRIBE_NOTIFY_ACTION action, PVOID pContext, EVT_HANDLE hEvent) {
+	FANCONTROL* pThis = static_cast<FANCONTROL*>(pContext);
+
+	if (action == EvtSubscribeActionDeliver && pThis != NULL) {
+		pThis->HandleModernStandbyEvent(hEvent);
+	}
+
+	return ERROR_SUCCESS;
+}
+
+void FANCONTROL::HandleModernStandbyEvent(EVT_HANDLE hEvent) {
+	DWORD bufferSize = 0;
+	DWORD bufferUsed = 0;
+	DWORD propertyCount = 0;
+
+	// First call to get required buffer size
+	EvtRender(NULL, hEvent, EvtRenderEventXml, bufferSize, NULL, &bufferUsed, &propertyCount);
+	bufferSize = bufferUsed;
+
+	std::vector<wchar_t> buffer(bufferSize / sizeof(wchar_t) + 1);
+	if (EvtRender(NULL, hEvent, EvtRenderEventXml, bufferSize, buffer.data(), &bufferUsed, &propertyCount)) {
+		// Parse for EventID - simple string search
+		std::wstring xml(buffer.data());
+
+		if (xml.find(L"<EventID>506</EventID>") != std::wstring::npos) {
+			this->Trace("Modern Standby Entry detected (EventID 506)");
+			// Handle Modern Standby entry similar to lid close
+			if (this->LidClosedMode == 3 || this->LidClosedMode == 4) {
+				this->previousModeBeforeSuspend = this->CurrentMode;
+				this->ModeToDialog(3);
+				this->SetFan("Modern Standby Entry - turning fans off", 0x00);
+			}
+			else if (this->LidClosedMode == 1) {
+				this->previousModeBeforeSuspend = this->CurrentMode;
+				this->ModeToDialog(1);
+				this->SetFan("Modern Standby Entry - BIOS mode", 0x80);
+			}
+		}
+		else if (xml.find(L"<EventID>507</EventID>") != std::wstring::npos) {
+			this->Trace("Modern Standby Exit detected (EventID 507)");
+			// Handle Modern Standby exit - restore previous mode
+			if (this->previousModeBeforeSuspend != -1 && this->previousModeBeforeSuspend != this->CurrentMode) {
+				this->ModeToDialog(this->previousModeBeforeSuspend);
+				this->Trace("Restored previous mode after Modern Standby exit");
+			}
+		}
+	}
 }
 
 //-------------------------------------------------------------------------

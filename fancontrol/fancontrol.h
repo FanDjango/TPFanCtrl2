@@ -236,6 +236,10 @@ protected:
 
 	HPOWERNOTIFY hPowerNotify;
 
+	EVT_HANDLE hEventSubscription;
+	static DWORD WINAPI EventLogCallback(EVT_SUBSCRIBE_NOTIFY_ACTION action, PVOID pContext, EVT_HANDLE hEvent);
+	void HandleModernStandbyEvent(EVT_HANDLE hEvent);
+
 	bool isLidClosed = false;
 
 	int previousModeBeforeLidClose = -1;
