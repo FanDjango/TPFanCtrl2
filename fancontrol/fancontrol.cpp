@@ -283,6 +283,14 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 
 	if (this->PowerSuspendMode) {
 		this->hPowerNotify = RegisterPowerSettingNotification(this->hwndDialog, &GUID_LIDSWITCH_STATE_CHANGE, DEVICE_NOTIFY_WINDOW_HANDLE);
+		if (this->hPowerNotify == NULL) {
+			char errBuf[128];
+			sprintf_s(errBuf, sizeof(errBuf), "Failed to subscribe to PowerSetting events, error: %lu", GetLastError());
+			this->Trace(errBuf);
+		}
+		else {
+			this->Trace("Subscribed to PowerSetting events");
+		}
 	}
 
 	if (this->ModernS0Mode) {
