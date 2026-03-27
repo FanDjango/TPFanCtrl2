@@ -306,6 +306,12 @@ FANCONTROL::ReadConfig(const char* configfile)
 				continue;
 			}
 
+			// Respect use of old parameter name for backward compatibility
+			if (_strnicmp(buf, "LidClosedMode=", 14) == 0) {
+				this->PowerSuspendMode = atoi(buf + 14);
+				continue;
+			}
+
 			// 0 -> Do not monitor Modern S0 state
 			// 1 -> Switch to BIOS mode on entering Modern S0 state (default)
 			// 2 -> Continue auto mode when entering Modern S0 state
