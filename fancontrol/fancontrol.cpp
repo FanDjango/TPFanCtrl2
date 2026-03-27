@@ -302,11 +302,11 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 
 		if (this->hEventSubscription == NULL) {
 			char errBuf[128];
-			sprintf_s(errBuf, sizeof(errBuf), "Failed to subscribe to Modern Standby events, error: %lu", GetLastError());
+			sprintf_s(errBuf, sizeof(errBuf), "Failed to subscribe to ModernS0 events, error: %lu", GetLastError());
 			this->Trace(errBuf);
 		}
 		else {
-			this->Trace("Subscribed to Modern Standby events (EventId 506/507)");
+			this->Trace("Subscribed to ModernS0 events");
 		}
 	}
 
