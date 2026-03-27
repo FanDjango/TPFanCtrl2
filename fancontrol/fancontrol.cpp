@@ -76,9 +76,6 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	ShowBiasedTemps(0),
 	SecWinUptime(0),
 	SecStartDelay(0),
-	SingleFan(0),
-	PowerSuspendMode(1), // 0 Disable, 1 BIOS(default), 2 Auto, 3 Manual(OFF), 4 Manual on any suspend
-	ModernS0Mode(0),  // 0 Disable(default), 1 BIOS, 2 Auto, 3 Manual(OFF)
 	SlimDialog(0),
 	Log2File(0),
 	StayOnTop(0),
@@ -98,6 +95,13 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	ManFanSpeed(7),
 	UseTWR(0),
 	FinalSeen(false),
+	SingleFan(0),
+	PowerSuspendMode(1), // 0 Disable, 1 BIOS(default), 2 Auto, 3 Manual(OFF), 4 Manual on any suspend
+	ModernS0Mode(0),  // 0 Disable(default), 1 BIOS, 2 Auto, 3 Manual(OFF)
+	savedMode(-1),
+	isPowerSuspendState(false),
+	isModernS0State(false),
+	isLidClosed(false),
 	m_fanTimer(NULL),
 	m_titleTimer(NULL),
 	m_iconTimer(NULL),
@@ -1186,7 +1190,7 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 			this->Trace("System resume detected");
 
 			if (this->PowerSuspendMode == 4) {
-				if (this->savedMode != this->CurrentMode) {
+				if (this->savedMode != -1 && this->savedMode != this->CurrentMode) {
 					::Sleep(5000);
 					this->ModeToDialog(this->savedMode);
 					::Sleep(1000);
@@ -1224,7 +1228,7 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 					this->Trace("Lid open detected");
 
 					if (this->PowerSuspendMode != 4) {
-						if (this->savedMode != this->CurrentMode) {
+						if (this->savedMode != -1 && this->savedMode != this->CurrentMode) {
 							::Sleep(5000);
 							this->ModeToDialog(this->savedMode);
 							::Sleep(1000);

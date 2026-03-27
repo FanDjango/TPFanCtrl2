@@ -242,11 +242,11 @@ protected:
 	void HandleModernStandbyEvent(EVT_HANDLE hEvent);
 
 	// saved mode for power state changes
-	int savedMode = -1;
+	int savedMode;
 	// power suspend and modern standby state tracking
-	bool isPowerSuspendState = false;
-	bool isModernS0State = false;
-	bool isLidClosed = false;
+	bool isPowerSuspendState;
+	bool isModernS0State;
+	bool isLidClosed;
 
 	// misc.cpp
 
