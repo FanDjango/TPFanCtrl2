@@ -25,8 +25,8 @@
 #include "winstuff.h"
 #include "TaskbarTextIcon.h"
 
-constexpr const char* FANCONTROLVERSIONS = "2.3.12.test002 Single Fan";
-constexpr const char* FANCONTROLVERSIOND = "2.3.12.test002 Dual Fan";
+constexpr const char* FANCONTROLVERSIONS = "2.3.12.test003 Single Fan";
+constexpr const char* FANCONTROLVERSIOND = "2.3.12.test003 Dual Fan";
 
 //Pipe name format - \\.\pipe\pipename
 #define g_szPipeName "\\\\.\\Pipe\\TPFanControl01"  //Name given to the pipe
@@ -236,6 +236,10 @@ protected:
 	bool SetHdw(const char* source, int hdwctrl, int HdwOffset, int AnyWayBit);
 
 	HPOWERNOTIFY hPowerNotify;
+	
+	HANDLE hSuspendResumeNotify;
+	static DWORD CALLBACK SuspendResumeCallback(PVOID Context, ULONG Type, PVOID Setting);
+	void HandleSuspendResumeEvent(ULONG Type);
 
 	EVT_HANDLE hEventSubscription;
 	static DWORD WINAPI EventLogCallback(EVT_SUBSCRIBE_NOTIFY_ACTION action, PVOID pContext, EVT_HANDLE hEvent);

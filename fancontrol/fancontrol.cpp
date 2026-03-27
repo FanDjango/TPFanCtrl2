@@ -22,11 +22,18 @@
 #include <vector>
 #include <string>
 #include <winevt.h>
+#include <powrprof.h>
 #pragma comment(lib, "wevtapi.lib")
+#pragma comment(lib, "powrprof.lib")
 
 DEFINE_GUID(GUID_LIDSWITCH_STATE_CHANGE,
 	0xba3e0f4d, 0xb817, 0x4094,
 	0xa2, 0xd1, 0xd5, 0x63, 0x79, 0xe6, 0xa0, 0xf3);
+
+// Define constant for RegisterSuspendResumeNotification if not available
+#ifndef DEVICE_NOTIFY_CALLBACK
+#define DEVICE_NOTIFY_CALLBACK 0x00000002
+#endif
 
 //-------------------------------------------------------------------------
 //  constructor
@@ -45,6 +52,7 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	FanSpeedLowByte(0x84),
 	CurrentIcon(-1),
 	hThread(NULL),
+	hSuspendResumeNotify(NULL),
 	FanBeepFreq(440),
 	FanBeepDura(50),
 	ReadErrorCount(0),
@@ -283,6 +291,47 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 
 	if (this->PowerSuspendMode) {
 		this->hPowerNotify = RegisterPowerSettingNotification(this->hwndDialog, &GUID_LIDSWITCH_STATE_CHANGE, DEVICE_NOTIFY_WINDOW_HANDLE);
+		if (this->hPowerNotify == NULL) {
+			char errBuf[128];
+			sprintf_s(errBuf, sizeof(errBuf), "Failed to register power setting notification, error: %lu", GetLastError());
+			this->Trace(errBuf);
+		}
+		else {
+			this->Trace("Registered for power setting notifications");
+		}
+
+		// RegisterSuspendResumeNotification is only available on Windows 8 and later
+		// Use dynamic loading to maintain compatibility with earlier Windows versions
+		typedef HPOWERNOTIFY(WINAPI* PFN_RegisterSuspendResumeNotification)(
+			PDEVICE_NOTIFY_SUBSCRIBE_PARAMETERS Recipient,
+			DWORD Flags
+		);
+
+		HMODULE hPowrProf = LoadLibraryA("powrprof.dll");
+		if (hPowrProf) {
+			PFN_RegisterSuspendResumeNotification pfnRegister = 
+				(PFN_RegisterSuspendResumeNotification)GetProcAddress(hPowrProf, "RegisterSuspendResumeNotification");
+
+			if (pfnRegister) {
+				DEVICE_NOTIFY_SUBSCRIBE_PARAMETERS params = { };
+				params.Callback = SuspendResumeCallback;
+				params.Context = this;
+
+				this->hSuspendResumeNotify = pfnRegister(&params, DEVICE_NOTIFY_CALLBACK);
+				if (this->hSuspendResumeNotify == NULL) {
+					char errBuf[128];
+					sprintf_s(errBuf, sizeof(errBuf), "Failed to register suspend/resume notification, error: %lu", GetLastError());
+					this->Trace(errBuf);
+				}
+				else {
+					this->Trace("Registered for suspend/resume notifications");
+				}
+			}
+			else {
+				this->Trace("RegisterSuspendResumeNotification not available on this Windows version");
+			}
+			// Don't free the library, we need it for unregistration
+		}
 	}
 
 	if (this->ModernS0Mode) {
@@ -372,6 +421,20 @@ FANCONTROL::~FANCONTROL() {
 
 	if (this->PowerSuspendMode) {
 		UnregisterPowerSettingNotification(this->hPowerNotify);
+		if (this->hSuspendResumeNotify) {
+			typedef BOOL(WINAPI* PFN_UnregisterSuspendResumeNotification)(HPOWERNOTIFY Handle);
+
+			HMODULE hPowrProf = GetModuleHandleA("powrprof.dll");
+			if (hPowrProf) {
+				PFN_UnregisterSuspendResumeNotification pfnUnregister = 
+					(PFN_UnregisterSuspendResumeNotification)GetProcAddress(hPowrProf, "UnregisterSuspendResumeNotification");
+
+				if (pfnUnregister) {
+					pfnUnregister(this->hSuspendResumeNotify);
+				}
+			}
+			this->hSuspendResumeNotify = NULL;
+		}
 	}
 
 	if (this->pTaskbarIcon) {
@@ -445,6 +508,36 @@ void FANCONTROL::HandleModernStandbyEvent(EVT_HANDLE hEvent) {
 				this->Trace("Restored saved mode");
 			}
 		}
+	}
+}
+
+//-------------------------------------------------------------------------
+//  Suspend/Resume callback
+//-------------------------------------------------------------------------
+DWORD CALLBACK FANCONTROL::SuspendResumeCallback(PVOID Context, ULONG Type, PVOID Setting) {
+	FANCONTROL* pThis = static_cast<FANCONTROL*>(Context);
+
+	if (pThis != NULL) {
+		pThis->HandleSuspendResumeEvent(Type);
+	}
+
+	return ERROR_SUCCESS;
+}
+
+void FANCONTROL::HandleSuspendResumeEvent(ULONG Type) {
+	char buf[128];
+
+	if (Type == PBT_APMSUSPEND) {
+		sprintf_s(buf, sizeof(buf), "RegisterSuspendResumeNotification: Suspend detected (Type=%lu)", Type);
+		this->Trace(buf);
+	}
+	else if (Type == PBT_APMRESUMESUSPEND || Type == PBT_APMRESUMEAUTOMATIC || Type == PBT_APMRESUMECRITICAL) {
+		sprintf_s(buf, sizeof(buf), "RegisterSuspendResumeNotification: Resume detected (Type=%lu)", Type);
+		this->Trace(buf);
+	}
+	else {
+		sprintf_s(buf, sizeof(buf), "RegisterSuspendResumeNotification: Power event detected (Type=%lu)", Type);
+		this->Trace(buf);
 	}
 }
 
