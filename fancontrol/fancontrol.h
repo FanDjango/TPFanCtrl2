@@ -103,7 +103,8 @@ protected:
 	int FanSpeedLowByte;
 	int ActiveMode;
 	int SingleFan;
-	int LidClosedMode;
+	int PowerSuspendMode;
+	int ModernS0Mode;
 	int UseTWR,
 		ManFanSpeed,
 		FinalSeen;
@@ -240,10 +241,12 @@ protected:
 	static DWORD WINAPI EventLogCallback(EVT_SUBSCRIBE_NOTIFY_ACTION action, PVOID pContext, EVT_HANDLE hEvent);
 	void HandleModernStandbyEvent(EVT_HANDLE hEvent);
 
+	// saved mode for power state changes
+	int savedMode = -1;
+	// power suspend and modern standby state tracking
+	bool isPowerSuspendState = false;
+	bool isModernS0State = false;
 	bool isLidClosed = false;
-
-	int previousModeBeforeLidClose = -1;
-	int previousModeBeforeSuspend = -1;
 
 	// misc.cpp
 

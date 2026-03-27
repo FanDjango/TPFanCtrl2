@@ -77,7 +77,8 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	SecWinUptime(0),
 	SecStartDelay(0),
 	SingleFan(0),
-	LidClosedMode(1), // 1 BIOS, 2 Auto, 3 Manual, 4 Manual on any suspend
+	PowerSuspendMode(1), // 0 Disable, 1 BIOS(default), 2 Auto, 3 Manual(OFF), 4 Manual on any suspend
+	ModernS0Mode(0),  // 0 Disable(default), 1 BIOS, 2 Auto, 3 Manual(OFF)
 	SlimDialog(0),
 	Log2File(0),
 	StayOnTop(0),
@@ -226,31 +227,6 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 		_itoa_s(this->ManFanSpeed, buf, 10);
 		::SetDlgItemText(this->hwndDialog, 8310, buf);
 
-		this->hPowerNotify = RegisterPowerSettingNotification(this->hwndDialog, &GUID_LIDSWITCH_STATE_CHANGE, DEVICE_NOTIFY_WINDOW_HANDLE);
-
-		// Subscribe to Modern Standby events (EventId 506 = Entry, 507 = Exit)
-		// These events are in the System log from Microsoft-Windows-Kernel-Power
-		const wchar_t* query = L"*[System[Provider[@Name='Microsoft-Windows-Kernel-Power'] and (EventID=506 or EventID=507)]]";
-		this->hEventSubscription = EvtSubscribe(
-			NULL,                           // Session (local)
-			NULL,                           // SignalEvent
-			L"System",                      // Channel path
-			query,                          // Query
-			NULL,                           // Bookmark
-			this,                           // Context (pass FANCONTROL pointer)
-			(EVT_SUBSCRIBE_CALLBACK)FANCONTROL::EventLogCallback,
-			EvtSubscribeToFutureEvents      // Flags
-		);
-
-		if (this->hEventSubscription == NULL) {
-			char errBuf[128];
-			sprintf_s(errBuf, sizeof(errBuf), "Failed to subscribe to Modern Standby events, error: %lu", GetLastError());
-			this->Trace(errBuf);
-		}
-		else {
-			this->Trace("Subscribed to Modern Standby events (EventId 506/507)");
-		}
-
 		if (SlimDialog == 1) {
 			if (this->StayOnTop)
 				this->hwndDialog = ::CreateDialogParam(hinstapp,
@@ -303,6 +279,35 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 		// sleep until start time + delay time
 		while ((DWORD)(tickCount + SecStartDelay * 1000) >= GetTickCount())
 			Sleep(200);
+	}
+
+	if (this->PowerSuspendMode) {
+		this->hPowerNotify = RegisterPowerSettingNotification(this->hwndDialog, &GUID_LIDSWITCH_STATE_CHANGE, DEVICE_NOTIFY_WINDOW_HANDLE);
+	}
+
+	if (this->ModernS0Mode) {
+		// Subscribe to Modern Standby events (EventId 506 = Entry, 507 = Exit)
+		// These events are in the System log from Microsoft-Windows-Kernel-Power
+		const wchar_t* query = L"*[System[Provider[@Name='Microsoft-Windows-Kernel-Power'] and (EventID=506 or EventID=507)]]";
+		this->hEventSubscription = EvtSubscribe(
+			NULL,                           // Session (local)
+			NULL,                           // SignalEvent
+			L"System",                      // Channel path
+			query,                          // Query
+			NULL,                           // Bookmark
+			this,                           // Context (pass FANCONTROL pointer)
+			(EVT_SUBSCRIBE_CALLBACK)FANCONTROL::EventLogCallback,
+			EvtSubscribeToFutureEvents      // Flags
+		);
+
+		if (this->hEventSubscription == NULL) {
+			char errBuf[128];
+			sprintf_s(errBuf, sizeof(errBuf), "Failed to subscribe to Modern Standby events, error: %lu", GetLastError());
+			this->Trace(errBuf);
+		}
+		else {
+			this->Trace("Subscribed to Modern Standby events (EventId 506/507)");
+		}
 	}
 
 	// taskbar icon
@@ -360,6 +365,15 @@ FANCONTROL::~FANCONTROL() {
 		this->hThread = NULL;
 	}
 
+	if (this->ModernS0Mode && this->hEventSubscription) {
+		EvtClose(this->hEventSubscription);
+		this->hEventSubscription = NULL;
+	}
+
+	if (this->PowerSuspendMode) {
+		UnregisterPowerSettingNotification(this->hPowerNotify);
+	}
+
 	if (this->pTaskbarIcon) {
 		delete this->pTaskbarIcon;
 		this->pTaskbarIcon = NULL;
@@ -370,13 +384,6 @@ FANCONTROL::~FANCONTROL() {
 		delete[] ppTbTextIcon;
 		ppTbTextIcon = NULL;
 	}
-
-	if (this->hEventSubscription) {
-		EvtClose(this->hEventSubscription);
-		this->hEventSubscription = NULL;
-	}
-
-	UnregisterPowerSettingNotification(this->hPowerNotify);
 
 	if (this->hwndDialog)
 		::DestroyWindow(this->hwndDialog);
@@ -413,25 +420,29 @@ void FANCONTROL::HandleModernStandbyEvent(EVT_HANDLE hEvent) {
 		std::wstring xml(buffer.data());
 
 		if (xml.find(L"<EventID>506</EventID>") != std::wstring::npos) {
-			this->Trace("Modern Standby Entry detected (EventID 506)");
-			// Handle Modern Standby entry similar to lid close
-			if (this->LidClosedMode == 3 || this->LidClosedMode == 4) {
-				this->previousModeBeforeSuspend = this->CurrentMode;
-				this->ModeToDialog(3);
-				this->SetFan("Modern Standby Entry - turning fans off", 0x00);
-			}
-			else if (this->LidClosedMode == 1) {
-				this->previousModeBeforeSuspend = this->CurrentMode;
+			this->isModernS0State = true;
+			this->Trace("Detected Modern S0 Entry");
+			this->savedMode = this->CurrentMode;
+
+			if (this->ModernS0Mode == 1) {
 				this->ModeToDialog(1);
-				this->SetFan("Modern Standby Entry - BIOS mode", 0x80);
+				if (this->SetFan("Switched to BIOS mode", 0x80)) ::Sleep(1000);
+			}
+			else if (this->ModernS0Mode == 2 || this->ModernS0Mode >= 4) {
+				this->Trace("Continuing current mode");
+			}
+			else if (this->ModernS0Mode == 3) {
+				this->ModeToDialog(3);
+				if (this->SetFan("Switched fans off and to manual mode", 0x00))	::Sleep(1000);
 			}
 		}
 		else if (xml.find(L"<EventID>507</EventID>") != std::wstring::npos) {
-			this->Trace("Modern Standby Exit detected (EventID 507)");
-			// Handle Modern Standby exit - restore previous mode
-			if (this->previousModeBeforeSuspend != -1 && this->previousModeBeforeSuspend != this->CurrentMode) {
-				this->ModeToDialog(this->previousModeBeforeSuspend);
-				this->Trace("Restored previous mode after Modern Standby exit");
+			this->isModernS0State = false;
+			this->Trace("Detected Modern S0 Exit");
+
+			if (this->savedMode != -1 && this->savedMode != this->CurrentMode) {
+				this->ModeToDialog(this->savedMode);
+				this->Trace("Restored saved mode");
 			}
 		}
 	}
@@ -560,6 +571,7 @@ int IconFontSize;
 BOOL _piscreated(FALSE);
 char obuftd[256] = "", obuftd2[128] = "", templisttd[512];
 char obuf[256] = "", obuf2[128] = "", templist2[512];
+
 ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 	ULONG rc = 0, ok, res;
 	char buf[1024];
@@ -1152,22 +1164,25 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 
 	case WM_POWERBROADCAST:
 		if (mp1 == PBT_APMSUSPEND) {
-			this->Trace("System suspension detected");
-			if (this->LidClosedMode == 4) {
-				this->previousModeBeforeSuspend = this->CurrentMode;
+			this->isPowerSuspendState = true;
+			this->savedMode = this->CurrentMode;
+			this->Trace("System suspend detected");
+
+			if (this->PowerSuspendMode == 4) {
 				this->ModeToDialog(3);
-				ok = this->SetFan("Switched to manual mode and turned fans off(4)", 0x00);
-				if (ok)	::Sleep(1000);
+				if (this->SetFan("Switched fans off and to manual mode", 0x00)) ::Sleep(1000);
 			}
 		}
 		else if (mp1 == PBT_APMRESUMEAUTOMATIC) {
+			this->isPowerSuspendState = false;
 			this->Trace("System resume detected");
-			if (this->LidClosedMode == 4) {
-				if (this->previousModeBeforeSuspend != this->CurrentMode) {
-					Sleep(5000);
-					this->ModeToDialog(this->previousModeBeforeSuspend);
-					Sleep(1000);
-					this->Trace("Switched to previous mode(4)");
+
+			if (this->PowerSuspendMode == 4) {
+				if (this->savedMode != this->CurrentMode) {
+					::Sleep(5000);
+					this->ModeToDialog(this->savedMode);
+					::Sleep(1000);
+					this->Trace("Restored saved mode");
 				}
 			}
 		}
@@ -1175,36 +1190,38 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 			POWERBROADCAST_SETTING* pbs = (POWERBROADCAST_SETTING*)mp2;
 			if (pbs->PowerSetting == GUID_LIDSWITCH_STATE_CHANGE) {
 				BYTE state = *(BYTE*)(&pbs->Data);
+
 				if (state == 0) {  // Lid closed
 					this->isLidClosed = true;
-					this->previousModeBeforeLidClose = this->CurrentMode;
 					this->Trace("Lid close detected");
-					if (this->LidClosedMode == 3) {
-						this->ModeToDialog(3);
-						ok = this->SetFan("Switched to manual mode and turned fans off(3)", 0x00);
-						if (ok)	::Sleep(1000);
-					}
-					else if (this->LidClosedMode == 1) {
+					this->savedMode = this->CurrentMode;
+
+					if (this->PowerSuspendMode == 1) {
 						this->ModeToDialog(1);
-						ok = this->SetFan("Switched to BIOS mode(1)", 0x80);
-						if (ok)	::Sleep(1000);
+						if (this->SetFan("Switched to BIOS mode", 0x80)) ::Sleep(1000);
 					}
-					else if (this->LidClosedMode == 4) {
+					else if (this->PowerSuspendMode == 2 || this->PowerSuspendMode >= 5) {
+						this->Trace("Continuing current mode");
 					}
-					else {
-						this->Trace("Continuing auto mode with lid closed(2)");
+					else if (this->PowerSuspendMode == 3) {
+						this->ModeToDialog(3);
+						if (this->SetFan("Switched fans off and to manual mode", 0x00)) ::Sleep(1000);
+					}
+					else if (this->PowerSuspendMode == 4) {
+						// Defer to PBT_APMSUSPEND/PBT_APMRESUMEAUTOMATIC handling
 					}
 				}
 				else { // Lid opened
-					if (this->isLidClosed) {
-						this->Trace("Lid open detected");
-						if (this->LidClosedMode != 4) {
-							if (this->previousModeBeforeLidClose != this->CurrentMode) {
-								this->ModeToDialog(this->previousModeBeforeLidClose);
-								this->Trace("Switched to previous mode(!=4)");
-							}
+					this->isLidClosed = false;
+					this->Trace("Lid open detected");
+
+					if (this->PowerSuspendMode != 4) {
+						if (this->savedMode != this->CurrentMode) {
+							::Sleep(5000);
+							this->ModeToDialog(this->savedMode);
+							::Sleep(1000);
+							this->Trace("Restored saved mode");
 						}
-						this->isLidClosed = false;
 					}
 				}
 			}

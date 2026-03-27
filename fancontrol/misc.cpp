@@ -296,12 +296,22 @@ FANCONTROL::ReadConfig(const char* configfile)
 				continue;
 			}
 
-			// 1 -> Switch to BIOS mode with lid closed
+			// 0 -> Do not monitor lid state
+			// 1 -> Switch to BIOS mode with lid closed (default)
 			// 2 -> Continue auto mode with lid closed
 			// 3 -> Switch to manual mode and turn fans off
 			// 4 -> Switch to manual mode and turn fans off on any power suspend event, regardless of lid is open/close
-			if (_strnicmp(buf, "LidClosedMode=", 14) == 0) {
-				this->LidClosedMode = atoi(buf + 14);
+			if (_strnicmp(buf, "PowerSuspendMode=", 17) == 0) {
+				this->PowerSuspendMode = atoi(buf + 17);
+				continue;
+			}
+
+			// 0 -> Do not monitor Modern S0 state
+			// 1 -> Switch to BIOS mode on entering Modern S0 state (default)
+			// 2 -> Continue auto mode when entering Modern S0 state
+			// 3 -> Switch to manual mode and turn fans off when entering Modern S0 state
+			if (_strnicmp(buf, "ModernS0Mode=", 13) == 0) {
+				this->ModernS0Mode = atoi(buf + 13);
 				continue;
 			}
 
@@ -567,7 +577,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 	//
 	// display config
 	//
-	sprintf_s(buf, sizeof(buf), "  SingleFan= %d, LidClosedMode= %d", this->SingleFan, this->LidClosedMode);
+	sprintf_s(buf, sizeof(buf), "  SingleFan= %d, PowerSuspendMode= %d, ModernS0Mode= %d", this->SingleFan, this->PowerSuspendMode, this->ModernS0Mode);
 	this->Trace(buf);
 
 	if (this->IconCycle <= 0 || this->IconCycle >= 60) this->IconCycle = 1;
