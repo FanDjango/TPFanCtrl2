@@ -661,7 +661,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 			this->SensorOffset[6].offs, this->SensorOffset[7].offs, this->SensorOffset[8].offs,
 			this->SensorOffset[9].offs, this->SensorOffset[10].offs, this->SensorOffset[11].offs);
 
-		for (i = 0; i < 15; i++) { SensorOffset[i].offs = SensorOffset[i].offs * 5 / 9; }
+		for (i = 0; i < 16; i++) { SensorOffset[i].offs = SensorOffset[i].offs * 5 / 9; }
 	}
 	else {
 		sprintf_s(buf, sizeof(buf), "  SensorOffset1-12= %d %d %d %d %d %d %d %d %d %d %d %d ° C",
