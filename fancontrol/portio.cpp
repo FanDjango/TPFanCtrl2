@@ -76,6 +76,20 @@ constexpr int TRACE_BUFFER_SIZE = 160;
 
 constexpr bool STRICT_EC_READ_OBF_HANDLING = false;
 
+//-------------------------------------------------------------------------
+// Context for a single EC operation
+//-------------------------------------------------------------------------
+struct EcOpContext {
+	USHORT ctrlPort;
+	USHORT dataPort;
+	UCHAR ecOffset;
+	int ecData;          // -1 for reads; 0-255 for writes (included in trace output)
+	const char* opName;  // "readec" or "writeec"
+	char* traceText;
+	size_t traceSize;
+	FANCONTROL* pThis;
+};
+
 //--------------------------------------------------------------------------
 // initialize embedded controller ports if not yet selected
 //--------------------------------------------------------------------------
@@ -211,64 +225,83 @@ WaitForControllerReady(USHORT ctrlPort, USHORT dataPort, int timeout = DEFAULT_T
 }
 
 //-------------------------------------------------------------------------
+// Trace an EC timeout: optionally drain, read status, format and emit trace
+//-------------------------------------------------------------------------
+static void
+TraceEcTimeout(const EcOpContext& ctx, int step, bool drain) {
+	if (drain) DrainOutputBuffer(ctx.ctrlPort, ctx.dataPort);
+
+	const UCHAR status = ReadPort(ctx.ctrlPort);
+
+	if (ctx.ecData >= 0) {
+		sprintf_s(ctx.traceText, ctx.traceSize,
+			"%s: timed out #%d (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X status=0x%02X)",
+			ctx.opName, step, ctx.ctrlPort, ctx.dataPort, ctx.ecOffset,
+			static_cast<UCHAR>(ctx.ecData), status);
+	}
+	else {
+		sprintf_s(ctx.traceText, ctx.traceSize,
+			"%s: timed out #%d (ctrl=0x%04X data=0x%04X offset=0x%02X status=0x%02X)",
+			ctx.opName, step, ctx.ctrlPort, ctx.dataPort, ctx.ecOffset, status);
+	}
+
+	ctx.pThis->Trace(ctx.traceText);
+}
+
+//-------------------------------------------------------------------------
+// Send an EC command byte and address byte, with timeout handling
+// Handles the common preamble shared by read and write operations:
+//   1. Wait for controller ready
+//   2. Write command byte, wait for IBF clear
+//   3. Write address byte, wait for IBF clear
+//-------------------------------------------------------------------------
+static bool
+SendEcCommandAndAddress(const EcOpContext& ctx, UCHAR command) {
+	// wait for IBF and OBF to clear; drain stale OBF if present
+	if (!WaitForControllerReady(ctx.ctrlPort, ctx.dataPort)) {
+		TraceEcTimeout(ctx, 1, false);
+		return false;
+	}
+
+	// send command byte
+	WritePort(ctx.ctrlPort, command);
+
+	// wait for IBF to clear (command byte removed from EC's input queue)
+	if (!WaitForAllClear(ctx.ctrlPort, ACPI_EC_FLAG_IBF)) {
+		TraceEcTimeout(ctx, 2, true);
+		return false;
+	}
+
+	// send address byte
+	WritePort(ctx.dataPort, ctx.ecOffset);
+
+	// wait for IBF to clear (address byte removed from EC's input queue)
+	if (!WaitForAllClear(ctx.ctrlPort, ACPI_EC_FLAG_IBF)) {
+		TraceEcTimeout(ctx, 3, true);
+		return false;
+	}
+
+	return true;
+}
+
+//-------------------------------------------------------------------------
 // Helper: Execute EC read operation on given ports
 // Returns: true if successful, false if timeout or error
 //-------------------------------------------------------------------------
 static bool
-ExecuteEcRead(USHORT ctrlPort, USHORT dataPort, UCHAR ecOffset, char& outData, char* traceText, size_t traceSize, FANCONTROL* pThis) {
-	// wait for IBF and OBF to clear; drain stale OBF if present
-	if (!WaitForControllerReady(ctrlPort, dataPort)) {
-		const UCHAR status = ReadPort(ctrlPort);
-		sprintf_s(traceText, traceSize,
-			"readec: timed out #1 (ctrl=0x%04X data=0x%04X offset=0x%02X status=0x%02X)",
-			ctrlPort, dataPort, ecOffset, status);
-		pThis->Trace(traceText);
+ExecuteEcRead(const EcOpContext& ctx, char& outData) {
+	if (!SendEcCommandAndAddress(ctx, ACPI_EC_COMMAND_READ))
 		return false;
-	}
-
-	// indicate read operation desired
-	WritePort(ctrlPort, ACPI_EC_COMMAND_READ);
-
-	// wait for IBF to clear (command byte removed from EC's input queue)
-	if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
-		DrainOutputBuffer(ctrlPort, dataPort);
-		const UCHAR status = ReadPort(ctrlPort);
-		sprintf_s(traceText, traceSize,
-			"readec: timed out #2 (ctrl=0x%04X data=0x%04X offset=0x%02X status=0x%02X)",
-			ctrlPort, dataPort, ecOffset, status);
-		pThis->Trace(traceText);
-		return false;
-	}
-
-	// indicate read operation desired location
-	WritePort(dataPort, ecOffset);
-
-	// wait for IBF to clear (address byte removed from EC's input queue)
-	if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
-		DrainOutputBuffer(ctrlPort, dataPort);
-		const UCHAR status = ReadPort(ctrlPort);
-		sprintf_s(traceText, traceSize,
-			"readec: timed out #3 (ctrl=0x%04X data=0x%04X offset=0x%02X status=0x%02X)",
-			ctrlPort, dataPort, ecOffset, status);
-		pThis->Trace(traceText);
-		return false;
-	}
 
 	if (STRICT_EC_READ_OBF_HANDLING) {
 		// wait for OBF to be SET (data ready to read)
-		if (!WaitForAnySet(ctrlPort, ACPI_EC_FLAG_OBF)) {
-			DrainOutputBuffer(ctrlPort, dataPort);
-			const UCHAR status = ReadPort(ctrlPort);
-			sprintf_s(traceText, traceSize,
-				"readec: timed out #4 (ctrl=0x%04X data=0x%04X offset=0x%02X status=0x%02X)",
-				ctrlPort, dataPort, ecOffset, status);
-			pThis->Trace(traceText);
+		if (!WaitForAnySet(ctx.ctrlPort, ACPI_EC_FLAG_OBF)) {
+			TraceEcTimeout(ctx, 4, true);
 			return false;
 		}
 	}
 
-	outData = static_cast<char>(ReadPort(dataPort));
-
+	outData = static_cast<char>(ReadPort(ctx.dataPort));
 	return true;
 }
 
@@ -277,56 +310,16 @@ ExecuteEcRead(USHORT ctrlPort, USHORT dataPort, UCHAR ecOffset, char& outData, c
 // Returns: true if successful, false if timeout or error
 //-------------------------------------------------------------------------
 static bool
-ExecuteEcWrite(USHORT ctrlPort, USHORT dataPort, UCHAR ecOffset, UCHAR ecData, char* traceText, size_t traceSize, FANCONTROL* pThis) {
-	// wait for IBF and OBF to clear; drain stale OBF if present
-	if (!WaitForControllerReady(ctrlPort, dataPort)) {
-		const UCHAR status = ReadPort(ctrlPort);
-		sprintf_s(traceText, traceSize,
-			"writeec: timed out #1 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X status=0x%02X)",
-			ctrlPort, dataPort, ecOffset, ecData, status);
-		pThis->Trace(traceText);
+ExecuteEcWrite(const EcOpContext& ctx) {
+	if (!SendEcCommandAndAddress(ctx, ACPI_EC_COMMAND_WRITE))
 		return false;
-	}
-
-	// indicate write operation desired
-	WritePort(ctrlPort, ACPI_EC_COMMAND_WRITE);
-
-	// wait for IBF to clear (command byte removed from EC's input queue)
-	if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
-		DrainOutputBuffer(ctrlPort, dataPort);
-		const UCHAR status = ReadPort(ctrlPort);
-		sprintf_s(traceText, traceSize,
-			"writeec: timed out #2 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X status=0x%02X)",
-			ctrlPort, dataPort, ecOffset, ecData, status);
-		pThis->Trace(traceText);
-		return false;
-	}
-
-	// indicate write operation desired location
-	WritePort(dataPort, ecOffset);
-
-	// wait for IBF to clear (address byte removed from EC's input queue)
-	if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
-		DrainOutputBuffer(ctrlPort, dataPort);
-		const UCHAR status = ReadPort(ctrlPort);
-		sprintf_s(traceText, traceSize,
-			"writeec: timed out #3 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X status=0x%02X)",
-			ctrlPort, dataPort, ecOffset, ecData, status);
-		pThis->Trace(traceText);
-		return false;
-	}
 
 	// perform the write operation
-	WritePort(dataPort, ecData);
+	WritePort(ctx.dataPort, static_cast<UCHAR>(ctx.ecData));
 
 	// wait for IBF to clear (data byte removed from EC's input queue)
-	if (!WaitForAllClear(ctrlPort, ACPI_EC_FLAG_IBF)) {
-		DrainOutputBuffer(ctrlPort, dataPort);
-		const UCHAR status = ReadPort(ctrlPort);
-		sprintf_s(traceText, traceSize,
-			"writeec: timed out #4 (ctrl=0x%04X data=0x%04X offset=0x%02X data=0x%02X status=0x%02X)",
-			ctrlPort, dataPort, ecOffset, ecData, status);
-		pThis->Trace(traceText);
+	if (!WaitForAllClear(ctx.ctrlPort, ACPI_EC_FLAG_IBF)) {
+		TraceEcTimeout(ctx, 4, true);
 		return false;
 	}
 
@@ -348,7 +341,12 @@ FANCONTROL::ReadByteFromEC(int offset, char* pdata) {
 	for (size_t i = 0; i < attemptCount; i++) {
 		const auto& layout = attempts[i];
 
-		if (ExecuteEcRead(layout.ctrl, layout.data, ecOffset, *pdata, traceText, sizeof(traceText), this)) {
+		const EcOpContext ctx = {
+			static_cast<USHORT>(layout.ctrl), static_cast<USHORT>(layout.data),
+			ecOffset, -1, "readec", traceText, sizeof(traceText), this
+		};
+
+		if (ExecuteEcRead(ctx, *pdata)) {
 			if (i > 0) {
 				sprintf_s(traceText, sizeof(traceText),
 					"readec: SUCCESS after layout switch to %s (ctrl=0x%04X data=0x%04X)",
@@ -389,10 +387,15 @@ FANCONTROL::WriteByteToEC(int offset, char NewData) {
 	for (size_t i = 0; i < attemptCount; i++) {
 		const auto& layout = attempts[i];
 
-		if (ExecuteEcWrite(layout.ctrl, layout.data, ecOffset, ecData, traceText, sizeof(traceText), this)) {
+		const EcOpContext ctx = {
+			static_cast<USHORT>(layout.ctrl), static_cast<USHORT>(layout.data),
+			ecOffset, static_cast<int>(ecData), "writeec", traceText, sizeof(traceText), this
+		};
+
+		if (ExecuteEcWrite(ctx)) {
 			if (i > 0) {
 				sprintf_s(traceText, sizeof(traceText),
-					"writeec: SUCCESS after port switch to %s (ctrl=0x%04X data=0x%04X)",
+					"writeec: SUCCESS after layout switch to %s (ctrl=0x%04X data=0x%04X)",
 					layout.name, layout.ctrl, layout.data);
 				this->Trace(traceText);
 				this->EC_CTRL = layout.ctrl;
