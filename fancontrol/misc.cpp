@@ -104,7 +104,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 
 			if (_strnicmp(buf, "MenuLabelSM1=", 13) == 0) {
 				char* p = buf + 13, * p2 = this->MenuLabelSM1;
-				while (*p != '/') {	// copy until '/' excluding tab, carr ret, new line
+				while (*p != '/' && *p != '\0') {	// copy until '/' excluding tab, carr ret, new line
 					if (*p != '\t' && *p != '\r' && *p != '\n')
 						*p2++ = *p;
 					p++;
@@ -115,7 +115,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 
 			if (_strnicmp(buf, "MenuLabelSM2=", 13) == 0) {
 				char* p = buf + 13, * p2 = this->MenuLabelSM2;
-				while (*p != '/') {	// copy until '/' excluding tab, carr ret, new line
+				while (*p != '/' && *p != '\0') {	// copy until '/' excluding tab, carr ret, new line
 					if (*p != '\t' && *p != '\r' && *p != '\n')
 						*p2++ = *p;
 					p++;
@@ -643,7 +643,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 		}
 		else {
 			strcpy_s(buf, sizeof(buf), "  Levels2= ");
-			for (i = 0, this->SmartLevels2[i].temp2 != -1; i++) {
+			for (i = 0; this->SmartLevels2[i].temp2 != -1; i++) {
 				sprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), "%s%d° C -> ", i > 0 ? ",  " : "", this->SmartLevels2[i].temp2);
 				if (this->SmartLevels2[i].fan2 != 0x80)
 					sprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), "%d", this->SmartLevels2[i].fan2);
