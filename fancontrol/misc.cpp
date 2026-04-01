@@ -559,10 +559,10 @@ FANCONTROL::ReadConfig(const char* configfile)
 		this->Trace("TPFanControl.ini missing, default values:");
 	}
 
-	HANDLE hLockS = CreateMutex(NULL, FALSE, "TPFanControlMutex01");
+	this->hLockS = CreateMutex(NULL, FALSE, "TPFanControlMutex01");
 
-	if (hLockS == NULL) Runs_as_service = true;
-	if (WAIT_OBJECT_0 != WaitForSingleObject(hLockS, 0))
+	if (this->hLockS == NULL) Runs_as_service = true;
+	if (WAIT_OBJECT_0 != WaitForSingleObject(this->hLockS, 0))
 		Runs_as_service = true;
 
 	//Offset Fahrenheit to Celsius
