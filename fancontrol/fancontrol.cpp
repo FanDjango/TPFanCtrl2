@@ -222,7 +222,7 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 
 		::SetWindowText(this->hwndDialog, this->Title);
 
-		::SetWindowLong(this->hwndDialog, GWL_USERDATA, (ULONG)this);
+		::SetWindowLongPtr(this->hwndDialog, GWLP_USERDATA, (LONG_PTR)this);
 
 		::SendDlgItemMessage(this->hwndDialog, 8112, EM_LIMITTEXT, 256, 0);
 		::SendDlgItemMessage(this->hwndDialog, 9200, EM_LIMITTEXT, 4096, 0);
@@ -231,7 +231,10 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 		::SetDlgItemText(this->hwndDialog, 8310, buf);
 
 		if (SlimDialog == 1) {
-			if (this->StayOnTop)
+            // Fix: destroy the old dialog before replacing
+            if (this->hwndDialog)
+                ::DestroyWindow(this->hwndDialog);
+            if (this->StayOnTop)
 				this->hwndDialog = ::CreateDialogParam(hinstapp,
 					MAKEINTRESOURCE(9001),
 					HWND_DESKTOP,
@@ -547,7 +550,7 @@ ULONG CALLBACK FANCONTROL::BaseDlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM 
 		s_TaskbarCreated = RegisterWindowMessage("TaskbarCreated");
 	}
 
-	FANCONTROL* This = (FANCONTROL*)GetWindowLong(hwnd, GWL_USERDATA);
+	FANCONTROL* This = (FANCONTROL*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
 	if (This) {
 		if (msg == s_TaskbarCreated) {

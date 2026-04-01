@@ -31,10 +31,10 @@ constexpr const char* FANCONTROLVERSIOND = "2.3.13 Dual Fan";
 //Pipe name format - \\.\pipe\pipename
 #define g_szPipeName "\\\\.\\Pipe\\TPFanControl01"  //Name given to the pipe
 
-#define WM__DISMISSDLG WM_USER+5
-#define WM__GETDATA WM_USER+6
-#define WM__NEWDATA WM_USER+7
-#define WM__TASKBAR WM_USER+8
+#define WM__DISMISSDLG (WM_USER+5)
+#define WM__GETDATA    (WM_USER+6)
+#define WM__NEWDATA    (WM_USER+7)
+#define WM__TASKBAR    (WM_USER+8)
 
 #define setzero(adr, size) memset((void*)(adr), (char)0x00, (size))
 #define ARRAYMAX(tab) (sizeof(tab)/sizeof((tab)[0]))
