@@ -33,7 +33,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 	int ProcessPriority = 2;
 
 	strncpy_s(this->MenuLabelSM1, sizeof(this->MenuLabelSM1), "Smart Level 1", 14);
-	strncpy_s(this->MenuLabelSM2, sizeof(this->MenuLabelSM1), "Smart Level 2", 14);
+	strncpy_s(this->MenuLabelSM2, sizeof(this->MenuLabelSM2), "Smart Level 2", 14);
 
 	setzero(SensorOffset, sizeof(SensorOffset));
 	setzero(FSensorOffset, sizeof(FSensorOffset));
@@ -643,7 +643,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 		}
 		else {
 			strcpy_s(buf, sizeof(buf), "  Levels2= ");
-			for (i = 0; this->SmartLevels2[i].temp2 != -1; i++) {
+			for (i = 0, this->SmartLevels2[i].temp2 != -1; i++) {
 				sprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), "%s%d° C -> ", i > 0 ? ",  " : "", this->SmartLevels2[i].temp2);
 				if (this->SmartLevels2[i].fan2 != 0x80)
 					sprintf_s(buf + strlen(buf), sizeof(buf) - strlen(buf), "%d", this->SmartLevels2[i].fan2);
