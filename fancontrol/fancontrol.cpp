@@ -33,7 +33,7 @@ DEFINE_GUID(GUID_LIDSWITCH_STATE_CHANGE,
 //-------------------------------------------------------------------------
 FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	: 
-	hinstapp(NULL),
+	hinstapp(hinstapp),  // was: hinstapp(NULL) — parameter value was discarded
 	hwndDialog(NULL),
 	hEventSubscription(NULL),
 	CurrentMode(-1),
@@ -107,7 +107,6 @@ FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	m_iconTimer(NULL),
 	m_renewTimer(NULL),
 	m_needClose(false),
-	m_hinstapp(hinstapp),
 	ppTbTextIcon(NULL),
 	pTextIconMutex(new MUTEXSEM(0, "Global\\TPFanControl_ppTbTextIcon")) {
 	int i = 0;
