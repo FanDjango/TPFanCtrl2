@@ -33,7 +33,7 @@ DEFINE_GUID(GUID_LIDSWITCH_STATE_CHANGE,
 //-------------------------------------------------------------------------
 FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	: 
-	hinstapp(hinstapp),  // was: hinstapp(NULL) — parameter value was discarded
+	hinstapp(hinstapp),
 	hwndDialog(NULL),
 	hEventSubscription(NULL),
 	CurrentMode(-1),
@@ -1026,7 +1026,7 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 						if (Fahrenheit)
 							sprintf_s(obuf2, sizeof(obuf2), "%d° F", temp * 9 / 5 + 32);
 						else
-							sprintf_s(obuf2, sizeof(obuf2), "%d° C", temp);
+						 sprintf_s(obuf2, sizeof(obuf2), "%d° C", temp);
 
 						size_t strlen_templist2 = strlen_s(templist2, sizeof(templist2));
 
