@@ -331,7 +331,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 				continue;
 			}
 
-			if (_strnicmp(buf, "ShowTempIcon=", 8) == 0) {
+			if (_strnicmp(buf, "ShowTempIcon=", 13) == 0) {
 				this->ShowTempIcon = atoi(buf + 13);
 				continue;
 			}
