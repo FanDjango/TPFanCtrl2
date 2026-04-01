@@ -161,14 +161,8 @@ protected:
 	char MenuLabelSM1[32];
 	char MenuLabelSM2[32];
 	HANDLE hThread;
-	HANDLE hPipe0;
-	HANDLE hPipe1;
-	HANDLE hPipe2;
-	HANDLE hPipe3;
-	HANDLE hPipe4;
-	HANDLE hPipe5;
-	HANDLE hPipe6;
-	HANDLE hPipe7;
+	static constexpr int NUM_PIPES = 8;
+	HANDLE hPipes[NUM_PIPES];
 	HANDLE hLock;
 	HANDLE hLockS;
 	BOOL Closing;
@@ -247,6 +241,31 @@ protected:
 	bool isPowerSuspendState;
 	bool isModernS0State;
 	bool isLidClosed;
+
+	// Constructor helpers
+	void InitSensorNames();
+	void InitSmartLevels();
+	void InitDialogWindow();
+	void HandleStartupDelay();
+	void SubscribePowerEvents();
+	void SetupTaskbarAndTimers();
+
+	// DlgProc handlers
+	ULONG OnHotKey(WPARAM mp1);
+	ULONG OnTimer(WPARAM timerId);
+	ULONG OnCommand(WPARAM mp1);
+	ULONG OnPowerBroadcast(WPARAM mp1, LPARAM mp2);
+	ULONG OnEndSession();
+	ULONG OnNewData(WPARAM mp1);
+	ULONG OnTaskbarNotify(LPARAM mp2);
+
+	// Shared helpers
+	bool TryClose();
+	void SwitchSmartLevel(int level);
+	void CreateAllNamedPipes();
+	void WriteAllNamedPipes(const char* data);
+	void CloseAllNamedPipes();
+	void UpdateTemperatureDisplay();
 
 	// misc.cpp
 
