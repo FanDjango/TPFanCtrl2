@@ -437,7 +437,8 @@ void FANCONTROL::HandleModernStandbyEvent(EVT_HANDLE hEvent) {
 		}
 		else if (xml.find(L"<EventID>507</EventID>") != std::wstring::npos) {
 			this->isModernS0State = false;
-			this->Trace("Detected Modern S0 Exit");
+			this->Trace("Detected Modern S0 Exit, defer access to EC (10s)");
+			::Sleep(10000);
 
 			if (this->savedMode != -1 && this->savedMode != this->CurrentMode) {
 				this->ModeToDialog(this->savedMode);
