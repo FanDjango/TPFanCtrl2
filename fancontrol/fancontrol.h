@@ -311,6 +311,8 @@ public:
 	void RemoveTextIcons(void);
 
 	void Trace(const char* text);
+
+	bool PollECByte(char offset, char* out, int expected, int timeoutMs);
 };
 
 #endif // FANCONTROL_H

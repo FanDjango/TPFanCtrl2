@@ -383,82 +383,64 @@ bool FANCONTROL::SetFan(const char* source, int fanctrl, bool final) {
 	char obuf[256] = "",
 		 obuf2[256],
 		 datebuf[128];
-	int ok = 0,	fan1_ok = 0, fan2_ok = 0;
+	int ok = 0, fan1_ok = 0, fan2_ok = 0;
+	char* p = obuf;
 
 	if (this->FanBeepFreq && this->FanBeepDura)
 		::Beep(this->FanBeepFreq, this->FanBeepDura);
 
 	this->CurrentDateTimeLocalized(datebuf, sizeof(datebuf));
 
-	sprintf_s(obuf + strlen(obuf), sizeof(obuf) - strlen(obuf), "%s: Set fan control to 0x%02x, ", source, fanctrl);
-	if (this->IndSmartLevel == 1 && this->SmartLevels2[0].temp2 != 0 && source == "Smart")
-		sprintf_s(obuf + strlen(obuf), sizeof(obuf) - strlen(obuf), "Mode 2, ");
-	if (this->IndSmartLevel == 0 && this->SmartLevels2[0].temp2 != 0 && source == "Smart")
-		sprintf_s(obuf + strlen(obuf), sizeof(obuf) - strlen(obuf), "Mode 1, ");
-	sprintf_s(obuf + strlen(obuf), sizeof(obuf) - strlen(obuf), "Result: ");
+	p += sprintf_s(p, sizeof(obuf) - (p - obuf), "%s: Set fan control to 0x%02x, ", source, fanctrl);
+	if (this->SmartLevels2[0].temp2 != 0 && strcmp(source, "Smart") == 0) // fix: was pointer compare
+		p += sprintf_s(p, sizeof(obuf) - (p - obuf), "Mode %d, ", this->IndSmartLevel == 1 ? 2 : 1);
+	p += sprintf_s(p, sizeof(obuf) - (p - obuf), "Result: ");
 
 	if (this->ActiveMode && !this->FinalSeen) {
 		if (!this->LockECAccess()) return false;
 
 		for (int i = 0; i < 5; i++) {
-			// set new fan1 level
-			ok = this->WriteByteToEC(TP_ECOFFSET_FAN_SWITCH, TP_ECVALUE_SELFAN1);
-			ok = this->WriteByteToEC(TP_ECOFFSET_FAN, fanctrl);
-			::Sleep(100);
-			// verify completion of fan1
-			fan1_ok = this->ReadByteFromEC(TP_ECOFFSET_FAN, &this->State.FanCtrl);
-			::Sleep(100);
+			// set and verify fan1
+			ok      = this->WriteByteToEC(TP_ECOFFSET_FAN_SWITCH, TP_ECVALUE_SELFAN1);
+			ok      = this->WriteByteToEC(TP_ECOFFSET_FAN, fanctrl);
+			fan1_ok = this->PollECByte(TP_ECOFFSET_FAN, &this->State.FanCtrl, fanctrl, 200);
 
 			if (!SingleFan) {
-				// set new fan1 level
-				ok = this->WriteByteToEC(TP_ECOFFSET_FAN_SWITCH, TP_ECVALUE_SELFAN2);
-				ok = this->WriteByteToEC(TP_ECOFFSET_FAN, fanctrl);
-				::Sleep(100);
-				// verify completion of fan2
-				fan2_ok = this->ReadByteFromEC(TP_ECOFFSET_FAN, &this->State.FanCtrl);
-				::Sleep(100);
+				// set and verify fan2
+				ok      = this->WriteByteToEC(TP_ECOFFSET_FAN_SWITCH, TP_ECVALUE_SELFAN2);
+				ok      = this->WriteByteToEC(TP_ECOFFSET_FAN, fanctrl);
+				fan2_ok = this->PollECByte(TP_ECOFFSET_FAN, &this->State.FanCtrl, fanctrl, 200);
 			}
 			else {
 				fan2_ok = true;
 			}
 
 			if (fan1_ok && fan2_ok) {
-				sprintf_s(obuf + strlen(obuf), sizeof(obuf) - strlen(obuf), "[i=%d] ", i);
+				p += sprintf_s(p, sizeof(obuf) - (p - obuf), "[i=%d] ", i);
 				break;
 			}
 
-			::Sleep(300);
+			::Sleep(100); // reduced from 300ms; EC should be ready sooner on retry
 		}
 
 		this->FreeECAccess();
 
 		if (this->State.FanCtrl == fanctrl) {
-			sprintf_s(obuf + strlen(obuf), sizeof(obuf) - strlen(obuf), "OK");
+			p += sprintf_s(p, sizeof(obuf) - (p - obuf), "OK");
 			ok = true;
 			if (final)
-				this->FinalSeen = true;    // prevent further changes when setting final mode
-
+				this->FinalSeen = true;
 		}
 		else {
-			sprintf_s(obuf + strlen(obuf), sizeof(obuf) - strlen(obuf), "FAILED!!");
-
-			/*			::Beep(880, 300);
-						::Sleep(200);
-						::Beep(880, 300);
-						::Sleep(200);
-						::Beep(880, 300);
-			*/
-
+			p += sprintf_s(p, sizeof(obuf) - (p - obuf), "FAILED!!");
 			ok = false;
 		}
 	}
 	else {
-		sprintf_s(obuf + strlen(obuf), sizeof(obuf) - strlen(obuf), "IGNORED!(passive mode");
+		p += sprintf_s(p, sizeof(obuf) - (p - obuf), "IGNORED!(passive mode)");
 	}
 
-	// display result
 	sprintf_s(obuf2, sizeof(obuf2), "%s   (%s)", obuf, datebuf);
-
 	::SetDlgItemText(this->hwndDialog, 8113, obuf2);
 
 	this->Trace(this->CurrentStatus);
@@ -823,3 +805,15 @@ bool FANCONTROL::ReadEcRaw(FCSTATE* pfcstate) {
 
 	return ok;
 }
+
+// Poll EC register until it matches expected value, or timeout (ms)
+bool FANCONTROL::PollECByte(char offset, char* out, int expected, int timeoutMs) {
+	const int tickMs = 10;
+	for (int elapsed = 0; elapsed < timeoutMs; elapsed += tickMs) {
+		if (this->ReadByteFromEC(offset, out) && (unsigned char)*out == (unsigned char)expected)
+			return true;
+		::Sleep(tickMs);
+	}
+	return false;
+}
+
