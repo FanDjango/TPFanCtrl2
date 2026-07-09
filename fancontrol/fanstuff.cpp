@@ -56,7 +56,7 @@ FANCONTROL::HandleData(void) {
 	for (i = 0; i < 12; i++) {
 		sprintf_s(what, sizeof(what), "|%s|", this->State.SensorName[i]); // name (e.g. "|CPU|") to match against list above
 
-		if (this->State.Sensors[i] != 0x80 && this - State.Sensors[i] != 0x00 && strstr(list, what) == 0) {
+		if (this->State.Sensors[i] != 0x80 && this->State.Sensors[i] != 0x00 && strstr(list, what) == 0) {
 			int isens = this->State.Sensors[i];
 			int ioffs = this->SensorOffset[i].offs;
 
@@ -181,7 +181,7 @@ FANCONTROL::HandleData(void) {
 		}
 	}
 
-	::SetDlgItemText(this->hwndDialog, 8101, templist2);
+	this->UpdateTempDisplay();
 
 	this->icontemp = this->State.Sensors[iMaxTemp];
 
@@ -290,13 +290,23 @@ FANCONTROL::HandleData(void) {
 			this->Trace(obuf);
 		}
 
-		::GetDlgItemText(this->hwndDialog, 8310, manlevel, sizeof(manlevel));
-
-		if (isdigit(manlevel[0]) && atoi(manlevel) >= 0 && atoi(manlevel) <= 255) {
-			if (this->State.FanCtrl != atoi(manlevel))
-				ok = this->SetFan("Manual", atoi(manlevel));
-			else
-				ok = true;
+		// Normal mode: ComboBox; Slim mode: fallback to text
+		if (this->SlimDialog != 1) {
+			int sel = (int)::SendMessage(::GetDlgItem(this->hwndDialog, 8310), CB_GETCURSEL, 0, 0);
+			if (sel >= 0 && sel <= 7) {
+				if (this->State.FanCtrl != sel)
+					ok = this->SetFan("Manual", sel);
+				else
+					ok = true;
+			}
+		} else {
+			::GetDlgItemText(this->hwndDialog, 8310, manlevel, sizeof(manlevel));
+			if (isdigit(manlevel[0]) && atoi(manlevel) >= 0 && atoi(manlevel) <= 255) {
+				if (this->State.FanCtrl != atoi(manlevel))
+					ok = this->SetFan("Manual", atoi(manlevel));
+				else
+					ok = true;
+			}
 		}
 
 		break;
