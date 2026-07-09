@@ -59,7 +59,7 @@ bool FANCONTROL::HandleData(void) {
 	for (i = 0; i < 12; i++) {
 		sprintf_s(what, sizeof(what), "|%s|", this->State.SensorName[i]); // name (e.g. "|CPU|") to match against list above
 
-		if (this->State.Sensors[i] != 0x80 && this - State.Sensors[i] != 0x00 && strstr(list, what) == 0) {
+		if (this->State.Sensors[i] != 0x80 && this->State.Sensors[i] != 0x00 && strstr(list, what) == 0) {
 			int isens = this->State.Sensors[i];
 			int ioffs = this->SensorOffset[i].offs;
 
