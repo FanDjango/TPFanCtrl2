@@ -71,7 +71,7 @@ CDynamicIcon::CDynamicIcon(const char *line1, const char *line2, const int iFarb
 
 
     FillRgn(memDC1_, rgn, hBrush);
-    DeleteObject(hBrush);
+
 
     hBrush = CreateSolidBrush(RGB(0, 0, 0));
     FillRgn(memDC2_, rgn, hBrush);

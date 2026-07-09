@@ -33,7 +33,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 	int ProcessPriority = 2;
 
 	strncpy_s(this->MenuLabelSM1, sizeof(this->MenuLabelSM1), "Smart Level 1", 14);
-	strncpy_s(this->MenuLabelSM2, sizeof(this->MenuLabelSM1), "Smart Level 2", 14);
+	strncpy_s(this->MenuLabelSM2, sizeof(this->MenuLabelSM2), "Smart Level 2", 14);
 
 	setzero(SensorOffset, sizeof(SensorOffset));
 	setzero(FSensorOffset, sizeof(FSensorOffset));
@@ -149,7 +149,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 			}
 
 			if (_strnicmp(buf, "level2=", 7) == 0) {
-				sscanf_s(buf + 7, "%d %d %d %d", &this->SmartLevels2[lcnt2].temp2, &this->SmartLevels2[lcnt2].fan2, &this->SmartLevels2[lcnt1].hystUp2, &this->SmartLevels2[lcnt1].hystDown2);
+				sscanf_s(buf + 7, "%d %d %d %d", &this->SmartLevels2[lcnt2].temp2, &this->SmartLevels2[lcnt2].fan2, &this->SmartLevels2[lcnt2].hystUp2, &this->SmartLevels2[lcnt2].hystDown2);
 				lcnt2++;
 				continue;
 			}
@@ -311,7 +311,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 				continue;
 			}
 			
-			if (_strnicmp(buf, "ShowTempIcon=", 8) == 0) {
+			if (_strnicmp(buf, "ShowTempIcon=", 13) == 0) {
 				this->ShowTempIcon = atoi(buf + 13);
 				continue;
 			}
