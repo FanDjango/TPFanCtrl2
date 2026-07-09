@@ -86,7 +86,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 				this->Cycle = atoi(buf + 6);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "IconCycle=", 10) == 0) {
 				this->IconCycle = atoi(buf + 10);
 				continue;
@@ -104,7 +104,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 
 			if (_strnicmp(buf, "MenuLabelSM1=", 13) == 0) {
 				char* p = buf + 13, * p2 = this->MenuLabelSM1;
-				while (*p != '/') {	// copy until '/' excluding tab, carr ret, new line
+				while (*p != '/' && *p != '\0') {	// copy until '/' excluding tab, carr ret, new line
 					if (*p != '\t' && *p != '\r' && *p != '\n')
 						*p2++ = *p;
 					p++;
@@ -115,7 +115,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 
 			if (_strnicmp(buf, "MenuLabelSM2=", 13) == 0) {
 				char* p = buf + 13, * p2 = this->MenuLabelSM2;
-				while (*p != '/') {	// copy until '/' excluding tab, carr ret, new line
+				while (*p != '/' && *p != '\0') {	// copy until '/' excluding tab, carr ret, new line
 					if (*p != '\t' && *p != '\r' && *p != '\n')
 						*p2++ = *p;
 					p++;
@@ -136,7 +136,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 
 			if (_strnicmp(buf, "SlimDialog=", 11) == 0) {
 				this->SlimDialog = atoi(buf + 11);
-				if (this->SlimDialog != 0) 
+				if (this->SlimDialog != 0)
 					this->SlimDialog = 1;
 				continue;
 			}
@@ -182,7 +182,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 			if (_strnicmp(buf, "HK_BIOS=", 8) == 0) {
 				this->HK_BIOS_Method = buf[8] - 0x30;
 				this->HK_BIOS = buf[10];
-				if ((this->HK_BIOS == 0x46) && (buf[11] > 0x30) && (buf[11] < 0x40)) 
+				if ((this->HK_BIOS == 0x46) && (buf[11] > 0x30) && (buf[11] < 0x40))
 					this->HK_BIOS = 0x70 + atoi(buf + 11) - 1;
 				continue;
 			}
@@ -190,7 +190,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 			if (_strnicmp(buf, "HK_Manual=", 10) == 0) {
 				this->HK_Manual_Method = buf[10] - 0x30;
 				this->HK_Manual = buf[12];
-				if ((this->HK_Manual == 0x46) && (buf[13] > 0x30) && (buf[13] < 0x40)) 
+				if ((this->HK_Manual == 0x46) && (buf[13] > 0x30) && (buf[13] < 0x40))
 					this->HK_Manual = 0x70 + atoi(buf + 13) - 1;
 				continue;
 			}
@@ -291,8 +291,33 @@ FANCONTROL::ReadConfig(const char* configfile)
 				continue;
 			}
 
-			if (_strnicmp(buf, "Log2File=", 9) == 0) {
-				this->Log2File = atoi(buf + 9);
+			if (_strnicmp(buf, "SingleFan=", 10) == 0) {
+				this->SingleFan = atoi(buf + 10);
+				continue;
+			}
+
+			// 0 -> Do not monitor lid state
+			// 1 -> Switch to BIOS mode with lid closed (default)
+			// 2 -> Continue auto mode with lid closed
+			// 3 -> Switch to manual mode and turn fans off
+			// 4 -> Switch to manual mode and turn fans off on any power suspend event, regardless of lid is open/close
+			if (_strnicmp(buf, "PowerSuspendMode=", 17) == 0) {
+				this->PowerSuspendMode = atoi(buf + 17);
+				continue;
+			}
+
+			// Respect use of old parameter name for backward compatibility
+			if (_strnicmp(buf, "LidClosedMode=", 14) == 0) {
+				this->PowerSuspendMode = atoi(buf + 14);
+				continue;
+			}
+
+			// 0 -> Do not monitor Modern S0 state
+			// 1 -> Switch to BIOS mode on entering Modern S0 state (default)
+			// 2 -> Continue auto mode when entering Modern S0 state
+			// 3 -> Switch to manual mode and turn fans off when entering Modern S0 state
+			if (_strnicmp(buf, "ModernS0Mode=", 13) == 0) {
+				this->ModernS0Mode = atoi(buf + 13);
 				continue;
 			}
 
@@ -300,19 +325,24 @@ FANCONTROL::ReadConfig(const char* configfile)
 				this->StayOnTop = atoi(buf + 10);
 				continue;
 			}
-			
-			if (_strnicmp(buf, "Log2csv=", 8) == 0) {
-				this->Log2csv = atoi(buf + 8);
-				continue;
-			}
 
 			if (_strnicmp(buf, "ShowAll=", 8) == 0) {
 				this->ShowAll = atoi(buf + 8);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "ShowTempIcon=", 13) == 0) {
 				this->ShowTempIcon = atoi(buf + 13);
+				continue;
+			}
+
+			if (_strnicmp(buf, "Log2File=", 9) == 0) {
+				this->Log2File = atoi(buf + 9);
+				continue;
+			}
+
+			if (_strnicmp(buf, "Log2csv=", 8) == 0) {
+				this->Log2csv = atoi(buf + 8);
 				continue;
 			}
 
@@ -325,72 +355,72 @@ FANCONTROL::ReadConfig(const char* configfile)
 				strncpy_s(this->gSensorNames[1], sizeof(this->gSensorNames[1]), buf + 12, 3);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorName3=", 12) == 0) {
 				strncpy_s(this->gSensorNames[2], sizeof(this->gSensorNames[2]), buf + 12, 3);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorName4=", 12) == 0) {
 				strncpy_s(this->gSensorNames[3], sizeof(this->gSensorNames[3]), buf + 12, 3);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorName5=", 12) == 0) {
 				strncpy_s(this->gSensorNames[4], sizeof(this->gSensorNames[4]), buf + 12, 3);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorName6=", 12) == 0) {
 				strncpy_s(this->gSensorNames[5], sizeof(this->gSensorNames[5]), buf + 12, 3);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorName7=", 12) == 0) {
 				strncpy_s(this->gSensorNames[6], sizeof(this->gSensorNames[6]), buf + 12, 3);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorName8=", 12) == 0) {
 				strncpy_s(this->gSensorNames[7], sizeof(this->gSensorNames[7]), buf + 12, 3);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorName9=", 12) == 0) {
 				strncpy_s(this->gSensorNames[8], sizeof(this->gSensorNames[8]), buf + 12, 3);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorName10=", 13) == 0) {
 				strncpy_s(this->gSensorNames[9], sizeof(this->gSensorNames[9]), buf + 13, 3);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorName11=", 13) == 0) {
 				strncpy_s(this->gSensorNames[10], sizeof(this->gSensorNames[10]), buf + 13, 3);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorName12=", 13) == 0) {
 				strncpy_s(this->gSensorNames[11], sizeof(this->gSensorNames[11]), buf + 13, 3);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorName13=", 13) == 0) {
 				strncpy_s(this->gSensorNames[12], sizeof(this->gSensorNames[12]), buf + 13, 3);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorName14=", 13) == 0) {
 				strncpy_s(this->gSensorNames[13], sizeof(this->gSensorNames[13]), buf + 13, 3);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorName15=", 13) == 0) {
 				strncpy_s(this->gSensorNames[14], sizeof(this->gSensorNames[14]), buf + 13, 3);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorName16=", 13) == 0) {
 				strncpy_s(this->gSensorNames[15], sizeof(this->gSensorNames[15]), buf + 13, 3);
 				continue;
@@ -400,7 +430,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 				sscanf_s(buf + 14, "%d %d %d", &this->SensorOffset[0].offs, &this->SensorOffset[0].hystMin, &this->SensorOffset[0].hystMax);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorOffset2=", 14) == 0) {
 				sscanf_s(buf + 14, "%d %d %d", &this->SensorOffset[1].offs, &this->SensorOffset[1].hystMin, &this->SensorOffset[1].hystMax);
 				continue;
@@ -415,7 +445,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 				sscanf_s(buf + 14, "%d %d %d", &this->SensorOffset[3].offs, &this->SensorOffset[3].hystMin, &this->SensorOffset[3].hystMax);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorOffset5=", 14) == 0) {
 				sscanf_s(buf + 14, "%d %d %d", &this->SensorOffset[4].offs, &this->SensorOffset[4].hystMin, &this->SensorOffset[4].hystMax);
 				continue;
@@ -425,7 +455,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 				sscanf_s(buf + 14, "%d %d %d", &this->SensorOffset[5].offs, &this->SensorOffset[5].hystMin, &this->SensorOffset[5].hystMax);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorOffset7=", 14) == 0) {
 				sscanf_s(buf + 14, "%d %d %d", &this->SensorOffset[6].offs, &this->SensorOffset[6].hystMin, &this->SensorOffset[6].hystMax);
 				continue;
@@ -435,42 +465,42 @@ FANCONTROL::ReadConfig(const char* configfile)
 				sscanf_s(buf + 14, "%d %d %d", &this->SensorOffset[7].offs, &this->SensorOffset[7].hystMin, &this->SensorOffset[7].hystMax);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorOffset9=", 14) == 0) {
 				sscanf_s(buf + 14, "%d %d %d", &this->SensorOffset[8].offs, &this->SensorOffset[8].hystMin, &this->SensorOffset[8].hystMax);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorOffset10=", 15) == 0) {
 				sscanf_s(buf + 15, "%d %d %d", &this->SensorOffset[9].offs, &this->SensorOffset[9].hystMin, &this->SensorOffset[9].hystMax);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorOffset11=", 15) == 0) {
 				sscanf_s(buf + 15, "%d %d %d", &this->SensorOffset[10].offs, &this->SensorOffset[10].hystMin, &this->SensorOffset[10].hystMax);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorOffset12=", 15) == 0) {
 				sscanf_s(buf + 15, "%d %d %d", &this->SensorOffset[11].offs, &this->SensorOffset[11].hystMin, &this->SensorOffset[11].hystMax);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorOffset13=", 15) == 0) {
 				sscanf_s(buf + 15, "%d %d %d", &this->SensorOffset[12].offs, &this->SensorOffset[12].hystMin, &this->SensorOffset[12].hystMax);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorOffset14=", 15) == 0) {
 				sscanf_s(buf + 15, "%d %d %d", &this->SensorOffset[13].offs, &this->SensorOffset[13].hystMin, &this->SensorOffset[13].hystMax);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorOffset15=", 15) == 0) {
 				sscanf_s(buf + 15, "%d %d %d", &this->SensorOffset[14].offs, &this->SensorOffset[14].hystMin, &this->SensorOffset[14].hystMax);
 				continue;
 			}
-			
+
 			if (_strnicmp(buf, "SensorOffset16=", 15) == 0) {
 				sscanf_s(buf + 15, "%d %d %d", &this->SensorOffset[15].offs, &this->SensorOffset[15].hystMin, &this->SensorOffset[15].hystMax);
 				continue;
@@ -520,16 +550,19 @@ FANCONTROL::ReadConfig(const char* configfile)
 		ok = true;
 
 		this->Trace("Current Config:");
-		this->Trace(FANCONTROLVERSION);
+		if (SingleFan)
+			this->Trace(FANCONTROLVERSIONS);
+		else
+			this->Trace(FANCONTROLVERSIOND);
 	}
 	else {
 		this->Trace("TPFanControl.ini missing, default values:");
 	}
 
-	HANDLE hLockS = CreateMutex(NULL, FALSE, "TPFanControlMutex01");
+	this->hLockS = CreateMutex(NULL, FALSE, "TPFanControlMutex01");
 
-	if (hLockS == NULL) Runs_as_service = true;
-	if (WAIT_OBJECT_0 != WaitForSingleObject(hLockS, 0))
+	if (this->hLockS == NULL) Runs_as_service = true;
+	if (WAIT_OBJECT_0 != WaitForSingleObject(this->hLockS, 0))
 		Runs_as_service = true;
 
 	//Offset Fahrenheit to Celsius
@@ -541,7 +574,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 	case 5: _SPC = SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS); break;
 	case 4: _SPC = SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS); break;
 	case 3: _SPC = SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS); break;
-//  case 2: _SPC = SetPriorityClass(GetCurrentProcess(), NORMAL_PRIORITY_CLASS); break;
+		//  case 2: _SPC = SetPriorityClass(GetCurrentProcess(), NORMAL_PRIORITY_CLASS); break;
 	case 1: _SPC = SetPriorityClass(GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS); break;
 	case 0: _SPC = SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS); break;
 	default: break; // _SPC = SetPriorityClass(GetCurrentProcess(), NORMAL_PRIORITY_CLASS); 
@@ -550,6 +583,9 @@ FANCONTROL::ReadConfig(const char* configfile)
 	//
 	// display config
 	//
+	sprintf_s(buf, sizeof(buf), "  SingleFan= %d, PowerSuspendMode= %d, ModernS0Mode= %d", this->SingleFan, this->PowerSuspendMode, this->ModernS0Mode);
+	this->Trace(buf);
+
 	if (this->IconCycle <= 0 || this->IconCycle >= 60) this->IconCycle = 1;
 	sprintf_s(buf, sizeof(buf), "  Active= %d, Cycle= %d, FanBeep= %d %d, MaxReadErrors= %d",
 		this->ActiveMode, this->Cycle,
@@ -625,7 +661,7 @@ FANCONTROL::ReadConfig(const char* configfile)
 			this->SensorOffset[6].offs, this->SensorOffset[7].offs, this->SensorOffset[8].offs,
 			this->SensorOffset[9].offs, this->SensorOffset[10].offs, this->SensorOffset[11].offs);
 
-		for (i = 0; i < 15; i++) { SensorOffset[i].offs = SensorOffset[i].offs * 5 / 9; }
+		for (i = 0; i < 16; i++) { SensorOffset[i].offs = SensorOffset[i].offs * 5 / 9; }
 	}
 	else {
 		sprintf_s(buf, sizeof(buf), "  SensorOffset1-12= %d %d %d %d %d %d %d %d %d %d %d %d ° C",
@@ -673,8 +709,8 @@ FANCONTROL::ReadConfig(const char* configfile)
 	if (this->Log2csv == 1) {
 		int	delfile = system("del TPFanControl_last_csv.txt && ren TPFanControl_csv.txt TPFanControl_last_csv.txt");
 
-		sprintf_s(buf, sizeof(buf), "time;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;rpm;fan;switch;", 
-			this->gSensorNames[0], this->gSensorNames[1], this->gSensorNames[2], 
+		sprintf_s(buf, sizeof(buf), "time;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;rpm;fan;switch;",
+			this->gSensorNames[0], this->gSensorNames[1], this->gSensorNames[2],
 			this->gSensorNames[3], this->gSensorNames[4], this->gSensorNames[5],
 			this->gSensorNames[6], this->gSensorNames[7], this->gSensorNames[8],
 			this->gSensorNames[9], this->gSensorNames[10], this->gSensorNames[11]);
@@ -821,9 +857,9 @@ FANCONTROL::Tracecsv(const char* text) {
 	if (this->Log2csv == 1) {
 		FILE* flogcsv;
 		errno_t errflogcsv = fopen_s(&flogcsv, "TPFanControl_csv.txt", "ab");
-		if (!errflogcsv) { 
-			fwrite(line, strlen_s(line, sizeof(line)), 1, flogcsv); 
-			fclose(flogcsv); 
+		if (!errflogcsv) {
+			fwrite(line, strlen_s(line, sizeof(line)), 1, flogcsv);
+			fclose(flogcsv);
 		}
 	}
 }
@@ -843,9 +879,9 @@ FANCONTROL::Tracecsvod(const char* text) {
 	if (this->Log2csv == 1) {
 		FILE* flogcsv;
 		errno_t errflogcsv = fopen_s(&flogcsv, "TPFanControl_csv.txt", "ab");
-		if (!errflogcsv) { 
-			fwrite(line, strlen(line), 1, flogcsv); 
-			fclose(flogcsv); 
+		if (!errflogcsv) {
+			fwrite(line, strlen(line), 1, flogcsv);
+			fclose(flogcsv);
 		}
 	}
 }
