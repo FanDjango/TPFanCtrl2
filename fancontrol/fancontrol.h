@@ -22,28 +22,26 @@
 
 #pragma once
 
-
 #include "winstuff.h"
 #include "TaskbarTextIcon.h"
 
-#define FANCONTROLVERSION "2.3.4 Dual Fan"
+constexpr const char* FANCONTROLVERSIONS = "2.3.13 Single Fan";
+constexpr const char* FANCONTROLVERSIOND = "2.3.13 Dual Fan";
 
-#define WM__DISMISSDLG WM_USER+5
-#define WM__GETDATA WM_USER+6
-#define WM__NEWDATA WM_USER+7
-#define WM__TASKBAR WM_USER+8
+//Pipe name format - \\.\pipe\pipename
+#define g_szPipeName "\\\\.\\Pipe\\TPFanControl01"  //Name given to the pipe
+
+#define WM__DISMISSDLG (WM_USER+5)
+#define WM__GETDATA    (WM_USER+6)
+#define WM__NEWDATA    (WM_USER+7)
+#define WM__TASKBAR    (WM_USER+8)
 
 #define setzero(adr, size) memset((void*)(adr), (char)0x00, (size))
 #define ARRAYMAX(tab) (sizeof(tab)/sizeof((tab)[0]))
 #define NULLSTRUCT    { 0, }
 
-//begin named pipe TPFanControl01
-#define g_szPipeName "\\\\.\\Pipe\\TPFanControl01"  //Name given to the pipe
-//Pipe name format - \\.\pipe\pipename
-
-#define BUFFER_SIZE 1024 //1k
-#define ACK_MESG_RECV "Message received successfully"
-//end named pipe TPFanControl01
+constexpr auto BUFFER_SIZE = 1024; // 1k
+constexpr auto ACK_MESG_RECV = "Message received successfully";
 
 class FANCONTROL {
 protected:
@@ -89,7 +87,7 @@ protected:
 	struct SENSOROFFSET {
 		int offs, hystMin, hystMax; // min and max temp values that offs takes effect. -1 to disable
 	} SensorOffset[16];
-	int LastSmartLevel = -1;
+
 	int IconLevels[3];    // temp levels for coloring the icon
 	int FIconLevels[3];    // fahrenheit temp levels for coloring the icon
 	int CurrentIcon;
@@ -103,8 +101,11 @@ protected:
 	int ReIcCycle;
 	int NoExtSensor;
 	int FanSpeedLowByte;
-	int ActiveMode,
-		UseTWR,
+	int ActiveMode;
+	int SingleFan;
+	int PowerSuspendMode;
+	int ModernS0Mode;
+	int UseTWR,
 		ManFanSpeed,
 		FinalSeen;
 	int CurrentMode, fanctrl2,
@@ -125,6 +126,7 @@ protected:
 	int ReadErrorCount;
 	int MaxReadErrors;
 	int SecWinUptime;
+	int SecStartDelay;
 	int SlimDialog;
 	int NoBallons,
 		HK_BIOS_Method,
@@ -145,12 +147,10 @@ protected:
 		HK_TG_BM,
 		HK_TG_MS,
 		HK_TG_12;
-	int EC_CTRL, EC_DATA;
 	int BluetoothEDR;
 	int ManModeExit;
 	int ManModeExitInternal;
 	int ShowBiasedTemps;
-	int SecStartDelay;
 	char gSensorNames[17][4];
 	int Log2File;
 	int Log2csv;
@@ -161,14 +161,8 @@ protected:
 	char MenuLabelSM1[32];
 	char MenuLabelSM2[32];
 	HANDLE hThread;
-	HANDLE hPipe0;
-	HANDLE hPipe1;
-	HANDLE hPipe2;
-	HANDLE hPipe3;
-	HANDLE hPipe4;
-	HANDLE hPipe5;
-	HANDLE hPipe6;
-	HANDLE hPipe7;
+	static constexpr int NUM_PIPES = 8;
+	HANDLE hPipes[NUM_PIPES];
 	HANDLE hLock;
 	HANDLE hLockS;
 	BOOL Closing;
@@ -177,22 +171,20 @@ protected:
 
 	char Title[128];
 	char Title2[128];
-	char Title3[128];
-	char Title4[128];
-	char Title5[128];
 	char LastTitle[128];
 	char LastTooltip[128];
 	char CurrentStatus[256];
 	char CurrentStatuscsv[256];
 
 	// dialog.cpp
+
 	int CurrentModeFromDialog();
 
 	int ShowAllFromDialog();
 
-	void ModeToDialog(int mode);
+	void ModeToDialog(int mode) const;
 
-	void ShowAllToDialog(int mode);
+	void ShowAllToDialog(int mode) const;
 
 	ULONG DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2);
 
@@ -218,6 +210,7 @@ protected:
 	int WorkThread();
 
 	// fancontrol.cpp
+
 	bool LockECAccess();
 
 	void FreeECAccess();
@@ -228,24 +221,55 @@ protected:
 
 	bool ReadEcRaw(FCSTATE* pfcstate);
 
-	int HandleData();
+	bool HandleData();
 
 	void SmartControl();
 
-	int SetFan(const char* source, int level, bool final = false);
+	bool SetFan(const char* source, int level, bool final = false);
 
-	int SetHdw(const char* source, int hdwctrl, int HdwOffset, int AnyWayBit);
+	bool SetHdw(const char* source, int hdwctrl, int HdwOffset, int AnyWayBit);
 
-	LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam);
-
-	// for detecting lid closing
 	HPOWERNOTIFY hPowerNotify;
-	bool isLidClosed = false;
-	int previousModeBeforeLidClose = -1;
-	// misc.cpp
-	int ReadConfig(const char* filename);
 
-	void Trace(const char* text);
+	EVT_HANDLE hEventSubscription;
+	static DWORD WINAPI EventLogCallback(EVT_SUBSCRIBE_NOTIFY_ACTION action, PVOID pContext, EVT_HANDLE hEvent);
+	void HandleModernStandbyEvent(EVT_HANDLE hEvent);
+
+	// saved mode for power state changes
+	int savedMode;
+	// power suspend and modern standby state tracking
+	bool isPowerSuspendState;
+	bool isModernS0State;
+	bool isLidClosed;
+
+	// Constructor helpers
+	void InitSensorNames();
+	void InitSmartLevels();
+	void InitDialogWindow();
+	void HandleStartupDelay();
+	void SubscribePowerEvents();
+	void SetupTaskbarAndTimers();
+
+	// DlgProc handlers
+	ULONG OnHotKey(WPARAM mp1);
+	ULONG OnTimer(WPARAM timerId);
+	ULONG OnCommand(WPARAM mp1);
+	ULONG OnPowerBroadcast(WPARAM mp1, LPARAM mp2);
+	ULONG OnEndSession();
+	ULONG OnNewData(WPARAM mp1);
+	ULONG OnTaskbarNotify(LPARAM mp2);
+
+	// Shared helpers
+	bool TryClose();
+	void SwitchSmartLevel(int level);
+	void CreateAllNamedPipes();
+	void WriteAllNamedPipes(const char* data);
+	void CloseAllNamedPipes();
+	void UpdateTemperatureDisplay();
+
+	// misc.cpp
+
+	int ReadConfig(const char* filename);
 
 	void Tracecsv(const char* textcsv);
 
@@ -263,23 +287,23 @@ protected:
 	);
 
 	// portio.cpp
+
 	bool ReadByteFromEC(int offset, char* pdata);
 
 	bool WriteByteToEC(int offset, char data);
 
 public:
+	int EC_CTRL, EC_DATA;
 
 	FANCONTROL(HINSTANCE hinstapp);
 
 	~FANCONTROL();
 
-	void Test(void);
+	int ProcessDialog() const;
 
-	int ProcessDialog();
+	HWND GetDialogWnd() const { return hwndDialog; }
 
-	HWND GetDialogWnd() { return hwndDialog; }
-
-	HANDLE GetWorkThread() { return hThread; }
+	HANDLE GetWorkThread() const { return hThread; }
 
 	// The texticons will be shown depending on variables
 	void ProcessTextIcons(void);
