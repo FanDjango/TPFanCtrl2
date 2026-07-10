@@ -195,19 +195,19 @@ VOID WINAPI ServiceMain(DWORD aArgc, LPTSTR* aArgv) {
 
 VOID WINAPI Handler(DWORD fdwControl) {
     switch(fdwControl) {
-    case SERVICE_CONTROL_STOP:
-        g_SvcStatus.dwCurrentState = SERVICE_STOP_PENDING;
-        SetServiceStatus(g_SvcHandle, &g_SvcStatus);
+       case SERVICE_CONTROL_STOP:
+            g_SvcStatus.dwCurrentState = SERVICE_STOP_PENDING;
+            SetServiceStatus(g_SvcHandle, &g_SvcStatus);
 
-        StopWorkerThread();
+            StopWorkerThread();
                 
-        g_SvcStatus.dwCurrentState = SERVICE_STOPPED;
-        SetServiceStatus(g_SvcHandle, &g_SvcStatus);
+            g_SvcStatus.dwCurrentState = SERVICE_STOPPED;
+            SetServiceStatus(g_SvcHandle, &g_SvcStatus);
 
-        break;
+            break;
 
-    default:
-        break;
+        default:
+            break;
     }
 }
 
