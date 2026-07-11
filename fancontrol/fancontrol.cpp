@@ -16,9 +16,7 @@
 // --------------------------------------------------------------
 #include "_prec.h"
 #include "fancontrol.h"
-#include "tools.h"
 #include "taskbartexticon.h"
-#include "sysinfoapi.h"
 #include <vector>
 #include <string>
 #include <winevt.h>
