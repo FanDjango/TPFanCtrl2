@@ -296,7 +296,10 @@ bool FANCONTROL::HandleData(void) {
 			this->Trace(obuf);
 		}
 
-		::GetDlgItemText(this->hwndDialog, 8310, manlevel, sizeof(manlevel));
+		if (SlimDialog)
+				::GetDlgItemText(this->hwndDialog, 8310, manlevel, sizeof(manlevel));
+			else
+				::GetWindowTextA(::GetDlgItem(this->hwndDialog, 8310), manlevel, sizeof(manlevel));
 
 		if (isdigit(manlevel[0]) && atoi(manlevel) >= 0 && atoi(manlevel) <= 255) {
 			if (this->State.FanCtrl != atoi(manlevel))

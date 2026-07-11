@@ -10,6 +10,7 @@
 
 #include <process.h>
 #include <commctrl.h>
+#pragma comment(lib, "comctl32.lib")
 #include <commdlg.h>
 #include <shellapi.h>
 #include <tchar.h>
