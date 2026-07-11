@@ -265,7 +265,6 @@ protected:
 	void CreateAllNamedPipes();
 	void WriteAllNamedPipes(const char* data);
 	void CloseAllNamedPipes();
-	void UpdateTemperatureDisplay();
 
 	// misc.cpp
 
@@ -309,6 +308,8 @@ public:
 	void ProcessTextIcons(void);
 
 	void RemoveTextIcons(void);
+
+	void UpdateTempDisplay(void);
 
 	void Trace(const char* text);
 

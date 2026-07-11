@@ -34,6 +34,7 @@ DEFINE_GUID(GUID_LIDSWITCH_STATE_CHANGE,
 FANCONTROL::FANCONTROL(HINSTANCE hinstapp)
 	: 
 	hinstapp(hinstapp),
+	m_hinstapp(hinstapp),
 	hwndDialog(NULL),
 	hEventSubscription(NULL),
 	CurrentMode(-1),
@@ -204,8 +205,37 @@ void FANCONTROL::InitDialogWindow() {
 	::SendDlgItemMessage(this->hwndDialog, 8112, EM_LIMITTEXT, 256, 0);
 	::SendDlgItemMessage(this->hwndDialog, 9200, EM_LIMITTEXT, 4096, 0);
 
-	_itoa_s(this->ManFanSpeed, buf, 10);
-	::SetDlgItemText(this->hwndDialog, 8310, buf);
+		// Init temperature ListView columns (normal mode only)
+		{
+			HWND hLV = ::GetDlgItem(this->hwndDialog, 8101);
+			if (hLV) {
+				ListView_SetExtendedListViewStyle(hLV, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER);
+				LVCOLUMNA lvc = {0};
+				lvc.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_FMT;
+				lvc.fmt = LVCFMT_LEFT;
+				lvc.cx = 28; lvc.pszText = (LPSTR)"#"; ListView_InsertColumn(hLV, 0, &lvc);
+				lvc.cx = 50; lvc.pszText = (LPSTR)"Name"; ListView_InsertColumn(hLV, 1, &lvc);
+				lvc.cx = 55; lvc.pszText = (LPSTR)"Temp"; ListView_InsertColumn(hLV, 2, &lvc);
+			}
+		}
+
+		// Init manual mode ComboBox (editable, normal mode only, supports 0-255)
+		{
+			HWND hCB = ::GetDlgItem(this->hwndDialog, 8310);
+			if (hCB) {
+				SendMessageA(hCB, CB_ADDSTRING, 0, (LPARAM)"0");
+				SendMessageA(hCB, CB_ADDSTRING, 0, (LPARAM)"1");
+				SendMessageA(hCB, CB_ADDSTRING, 0, (LPARAM)"2");
+				SendMessageA(hCB, CB_ADDSTRING, 0, (LPARAM)"3");
+				SendMessageA(hCB, CB_ADDSTRING, 0, (LPARAM)"4");
+				SendMessageA(hCB, CB_ADDSTRING, 0, (LPARAM)"5");
+				SendMessageA(hCB, CB_ADDSTRING, 0, (LPARAM)"6");
+				SendMessageA(hCB, CB_ADDSTRING, 0, (LPARAM)"7");
+				char mbuf[16];
+				_itoa_s(this->ManFanSpeed, mbuf, 10);
+				SetWindowTextA(hCB, mbuf);
+			}
+		}
 
 	if (SlimDialog == 1) {
 		// Fix: destroy the old dialog before replacing
@@ -588,6 +618,38 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 	case WM_TIMER:
 		return OnTimer(mp1);
 
+	case WM_NOTIFY:
+		{
+			LPNMHDR pnmh = (LPNMHDR)mp2;
+			if (pnmh->idFrom == 8101 && pnmh->code == NM_CUSTOMDRAW)
+			{
+				LPNMLVCUSTOMDRAW lplvcd = (LPNMLVCUSTOMDRAW)mp2;
+				switch (lplvcd->nmcd.dwDrawStage)
+				{
+				case CDDS_PREPAINT:
+					return CDRF_NOTIFYITEMDRAW;
+				case CDDS_ITEMPREPAINT:
+				{
+					char tempStr[16];
+					ListView_GetItemText(pnmh->hwndFrom,
+						(int)lplvcd->nmcd.dwItemSpec, 2,
+						tempStr, sizeof(tempStr));
+					int temp = atoi(tempStr);
+					if (temp >= this->IconLevels[2] && this->IconLevels[2] > 0)
+						lplvcd->clrText = RGB(255, 69, 0);
+					else if (temp >= this->IconLevels[1] && this->IconLevels[1] > 0)
+						lplvcd->clrText = RGB(255, 165, 0);
+					else if (temp >= this->IconLevels[0] && this->IconLevels[0] > 0)
+						lplvcd->clrText = RGB(210, 160, 0);
+					return CDRF_NEWFONT;
+				}
+				default:
+					return CDRF_DODEFAULT;
+				}
+			}
+		}
+		break;
+
 	case WM_COMMAND:
 		return OnCommand(mp1);
 
@@ -808,13 +870,15 @@ ULONG FANCONTROL::OnTimer(WPARAM timerId) {
 //  WM_COMMAND handler
 //-------------------------------------------------------------------------
 ULONG FANCONTROL::OnCommand(WPARAM mp1) {
-	if (HIWORD(mp1) != BN_CLICKED && HIWORD(mp1) != EN_CHANGE)
+	if (HIWORD(mp1) != BN_CLICKED && HIWORD(mp1) != EN_CHANGE
+		&& HIWORD(mp1) != CBN_SELCHANGE && HIWORD(mp1) != CBN_EDITCHANGE)
 		return 0;
 
 	int cmd = LOWORD(mp1);
 
 	if (cmd == 7001 || cmd == 7002) {
-		UpdateTemperatureDisplay();
+		this->ShowAllFromDialog();
+		this->UpdateTempDisplay();
 	}
 
 	if (cmd >= 8300 && cmd <= 8302 || cmd == 8310) {  // radio button or manual speed entry
@@ -1241,50 +1305,49 @@ void FANCONTROL::CloseAllNamedPipes() {
 //-------------------------------------------------------------------------
 //  update the temperature sensor display list
 //-------------------------------------------------------------------------
-void FANCONTROL::UpdateTemperatureDisplay() {
-	this->ShowAllFromDialog();
+void
+FANCONTROL::UpdateTempDisplay(void)
+{
+	HWND hLV = ::GetDlgItem(this->hwndDialog, 8101);
+	if (!hLV) return;
 
-	char obuf2[128] = "";
-	char templist2[512] = "";
+	ListView_DeleteAllItems(hLV);
 
-	for (int i = 0; i < 12; i++) {
+	LVITEMA lvi = {0};
+	lvi.mask = LVIF_TEXT;
+	char buf[32];
+
+	for (int i = 0; i < 12; i++)
+	{
 		int temp = this->State.Sensors[i];
+		BOOL show = (temp < 128 && temp != 0) || (this->ShowAll == 1);
 
-		if (temp < 128 && temp != 0) {
-			if (Fahrenheit)
-				sprintf_s(obuf2, sizeof(obuf2), "%d° F", temp * 9 / 5 + 32);
-			else
-				sprintf_s(obuf2, sizeof(obuf2), "%d° C", temp);
+		if (show)
+		{
+			sprintf_s(buf, sizeof(buf), "%d", i + 1);
+			lvi.iItem = i;
+			lvi.iSubItem = 0;
+			lvi.pszText = buf;
+			int idx = ListView_InsertItem(hLV, &lvi);
 
-			size_t strlen_templist2 = strlen_s(templist2, sizeof(templist2));
+			ListView_SetItemText(hLV, idx, 1, (LPSTR)this->State.SensorName[i]);
 
-			if (SlimDialog && StayOnTop)
-				sprintf_s(templist2 + strlen_templist2, sizeof(templist2) - strlen_templist2,
-					"%d %s %s (0x%02x)", i + 1, this->State.SensorName[i], obuf2, this->State.SensorAddr[i]);
-			else
-				sprintf_s(templist2 + strlen_templist2, sizeof(templist2) - strlen_templist2,
-					"%d %s %s", i + 1, this->State.SensorName[i], obuf2);
-
-			strcat_s(templist2, sizeof(templist2), "\r\n");
-		}
-		else {
-			if (this->ShowAll == 1) {
-				sprintf_s(obuf2, sizeof(obuf2), "n/a");
-				size_t strlen_templist2 = strlen_s(templist2, sizeof(templist2));
-
-				if (SlimDialog && StayOnTop)
-					sprintf_s(templist2 + strlen_templist2, sizeof(templist2) - strlen_templist2,
-						"%d %s %s (0x%02x)", i + 1, this->State.SensorName[i], obuf2, this->State.SensorAddr[i]);
+			if (temp < 128 && temp != 0)
+			{
+				if (Fahrenheit)
+					sprintf_s(buf, sizeof(buf), "%d F", temp * 9 / 5 + 32);
 				else
-					sprintf_s(templist2 + strlen_templist2, sizeof(templist2) - strlen_templist2,
-						"%d %s %s", i + 1, this->State.SensorName[i], obuf2);
-
-				strcat_s(templist2, sizeof(templist2), "\r\n");
+					sprintf_s(buf, sizeof(buf), "%d C", temp);
 			}
+			else
+			{
+				strcpy_s(buf, sizeof(buf), "n/a");
+			}
+			ListView_SetItemText(hLV, idx, 2, buf);
 		}
 	}
-	::SetDlgItemText(this->hwndDialog, 8101, templist2);
-	this->icontemp = this->State.Sensors[iMaxTemp];
+
+	this->icontemp = this->State.Sensors[this->iMaxTemp];
 }
 
 //-------------------------------------------------------------------------
