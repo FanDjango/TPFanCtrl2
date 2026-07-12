@@ -187,7 +187,10 @@ bool FANCONTROL::HandleData(void) {
 		}
 	}
 
-	::SetDlgItemText(this->hwndDialog, 8101, templist2);
+	if (SlimDialog)
+		::SetDlgItemText(this->hwndDialog, 8101, templist2);
+	else
+		this->UpdateTempDisplay();
 
 	this->icontemp = this->State.Sensors[iMaxTemp];
 
@@ -301,9 +304,10 @@ bool FANCONTROL::HandleData(void) {
 			else
 				::GetWindowTextA(::GetDlgItem(this->hwndDialog, 8310), manlevel, sizeof(manlevel));
 
-		if (isdigit(manlevel[0]) && atoi(manlevel) >= 0 && atoi(manlevel) <= 255) {
-			if (this->State.FanCtrl != atoi(manlevel))
-				ok = this->SetFan("Manual", atoi(manlevel));
+		int speedVal = strtol(manlevel, NULL, 0);
+		if (speedVal >= 0 && speedVal <= 255) {
+			if (this->State.FanCtrl != speedVal)
+				ok = this->SetFan("Manual", speedVal);
 			else
 				ok = true;
 		}

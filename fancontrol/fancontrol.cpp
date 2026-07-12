@@ -880,6 +880,8 @@ ULONG FANCONTROL::OnCommand(WPARAM mp1) {
 	}
 
 	if (cmd >= 8300 && cmd <= 8302 || cmd == 8310) {  // radio button or manual speed entry
+		if (cmd == 8310)  // auto-switch to Manual when user interacts with speed ComboBox
+			this->ModeToDialog(3);
 		::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
 	}
 	else {
