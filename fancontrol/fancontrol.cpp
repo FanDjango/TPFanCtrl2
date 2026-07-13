@@ -207,7 +207,7 @@ void FANCONTROL::InitDialogWindow() {
 		{
 			HWND hLV = ::GetDlgItem(this->hwndDialog, 8101);
 			if (hLV) {
-				ListView_SetExtendedListViewStyle(hLV, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER);
+				ListView_SetExtendedListViewStyle(hLV, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 				LVCOLUMNA lvc = {0};
 				lvc.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_FMT;
 				lvc.fmt = LVCFMT_LEFT;
@@ -880,8 +880,11 @@ ULONG FANCONTROL::OnCommand(WPARAM mp1) {
 	}
 
 	if (cmd >= 8300 && cmd <= 8302 || cmd == 8310) {  // radio button or manual speed entry
-		if (cmd == 8310)  // auto-switch to Manual when user interacts with speed ComboBox
+		if (cmd == 8310) {  // auto-switch to Manual when user interacts with speed ComboBox
+			if (HIWORD(mp1) == CBN_EDITCHANGE)  // ignore per-keystroke, only act on CBN_SELCHANGE
+				return 0;
 			this->ModeToDialog(3);
+		}
 		::PostMessage(this->hwndDialog, WM__GETDATA, 0, 0);
 	}
 	else {
