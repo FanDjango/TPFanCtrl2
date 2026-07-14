@@ -619,30 +619,91 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 	case WM_NOTIFY:
 		{
 			LPNMHDR pnmh = (LPNMHDR)mp2;
-			if (pnmh->idFrom == 8101 && pnmh->code == NM_CUSTOMDRAW)
+			// Only handle custom draw if control 8101 is a ListView (normal/StayOnTop dialogs)
+			// In slim dialogs, control 8101 is an EDITTEXT
+			if (!SlimDialog && pnmh->idFrom == 8101 && pnmh->code == NM_CUSTOMDRAW)
 			{
 				LPNMLVCUSTOMDRAW lplvcd = (LPNMLVCUSTOMDRAW)mp2;
+				LRESULT result = CDRF_DODEFAULT;
+
 				switch (lplvcd->nmcd.dwDrawStage)
 				{
 				case CDDS_PREPAINT:
-					return CDRF_NOTIFYITEMDRAW;
+					result = CDRF_NOTIFYITEMDRAW;
+					break;
 				case CDDS_ITEMPREPAINT:
+					result = CDRF_NOTIFYSUBITEMDRAW;
+					break;
+				case CDDS_ITEMPREPAINT | CDDS_SUBITEM:
 				{
-					char tempStr[16];
-					ListView_GetItemText(pnmh->hwndFrom,
-						(int)lplvcd->nmcd.dwItemSpec, 2,
-						tempStr, sizeof(tempStr));
-					int temp = atoi(tempStr);
-					if (temp >= this->IconLevels[2] && this->IconLevels[2] > 0)
-						lplvcd->clrText = RGB(255, 69, 0);
-					else if (temp >= this->IconLevels[1] && this->IconLevels[1] > 0)
-						lplvcd->clrText = RGB(255, 165, 0);
-					else if (temp >= this->IconLevels[0] && this->IconLevels[0] > 0)
-						lplvcd->clrText = RGB(210, 160, 0);
-					return CDRF_NEWFONT;
+					lplvcd->clrTextBk = CLR_DEFAULT;
+					if (lplvcd->iSubItem == 2)
+					{
+						char tempStr[16];
+						ListView_GetItemText(pnmh->hwndFrom,
+							(int)lplvcd->nmcd.dwItemSpec, 2,
+							tempStr, sizeof(tempStr));
+						int temp = atoi(tempStr);
+						if (temp >= this->IconLevels[2] && this->IconLevels[2] > 0)
+							lplvcd->clrText = RGB(255, 69, 0);     // red-orange
+						else if (temp >= this->IconLevels[1] && this->IconLevels[1] > 0)
+							lplvcd->clrText = RGB(255, 165, 0);   // orange
+						else if (temp >= this->IconLevels[0] && this->IconLevels[0] > 0)
+							lplvcd->clrText = RGB(210, 160, 0);   // dark yellow
+					}
+					result = CDRF_NEWFONT;
+					break;
 				}
 				default:
-					return CDRF_DODEFAULT;
+					result = CDRF_DODEFAULT;
+					break;
+				}
+				SetWindowLongPtr(hwnd, DWLP_MSGRESULT, result);
+				return TRUE;
+			}
+			// Handle header custom draw for column 2
+			else if (!SlimDialog && pnmh->code == NM_CUSTOMDRAW)
+			{
+				HWND hLV = ::GetDlgItem(hwnd, 8101);
+				if (hLV)
+				{
+					HWND hHeader = ListView_GetHeader(hLV);
+					if (pnmh->hwndFrom == hHeader)
+					{
+						LPNMCUSTOMDRAW lpnmcd = (LPNMCUSTOMDRAW)mp2;
+						LRESULT result = CDRF_DODEFAULT;
+
+						switch (lpnmcd->dwDrawStage)
+						{
+						case CDDS_PREPAINT:
+							result = CDRF_NOTIFYITEMDRAW;
+							break;
+						case CDDS_ITEMPREPAINT:
+						{
+							// Only color column 2 (Temp column)
+							if (lpnmcd->dwItemSpec == 2)
+							{
+								// Determine color based on MaxTemp and IconLevels
+								COLORREF textColor = RGB(0, 0, 0); // default black
+								if (this->MaxTemp >= this->IconLevels[2] && this->IconLevels[2] > 0)
+									textColor = RGB(255, 69, 0);     // red-orange
+								else if (this->MaxTemp >= this->IconLevels[1] && this->IconLevels[1] > 0)
+									textColor = RGB(255, 165, 0);   // orange
+								else if (this->MaxTemp >= this->IconLevels[0] && this->IconLevels[0] > 0)
+									textColor = RGB(210, 160, 0);   // dark yellow
+
+								SetTextColor(lpnmcd->hdc, textColor);
+								result = CDRF_NEWFONT;
+							}
+							break;
+						}
+						default:
+							result = CDRF_DODEFAULT;
+							break;
+						}
+						SetWindowLongPtr(hwnd, DWLP_MSGRESULT, result);
+						return TRUE;
+					}
 				}
 			}
 		}
@@ -1351,6 +1412,12 @@ FANCONTROL::UpdateTempDisplay(void)
 	}
 
 	this->icontemp = this->State.Sensors[this->iMaxTemp];
+
+	// Invalidate header to update column 2 color based on MaxTemp
+	HWND hHeader = ListView_GetHeader(hLV);
+	if (hHeader) {
+		InvalidateRect(hHeader, NULL, TRUE);
+	}
 }
 
 //-------------------------------------------------------------------------
