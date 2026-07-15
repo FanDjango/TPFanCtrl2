@@ -601,6 +601,23 @@ BOOL _piscreated(FALSE);
 char obuftd[256] = "", obuftd2[128] = "", templisttd[512];
 char obuf[256] = "", obuf2[128] = "", templist2[512];
 
+// Temperature color constants
+static constexpr COLORREF COLOR_RED_ORANGE = RGB(255, 69, 0);
+static constexpr COLORREF COLOR_ORANGE = RGB(255, 165, 0);
+static constexpr COLORREF COLOR_DARK_YELLOW = RGB(210, 160, 0);
+static constexpr COLORREF COLOR_BLACK = RGB(0, 0, 0);
+
+// Helper function to determine color based on temperature and thresholds
+static inline COLORREF GetTempColor(int temp, const int* iconLevels) {
+	if (temp >= iconLevels[2] && iconLevels[2] > 0)
+		return COLOR_RED_ORANGE;
+	if (temp >= iconLevels[1] && iconLevels[1] > 0)
+		return COLOR_ORANGE;
+	if (temp >= iconLevels[0] && iconLevels[0] > 0)
+		return COLOR_DARK_YELLOW;
+	return COLOR_BLACK;
+}
+
 //-------------------------------------------------------------------------
 //  dialog window procedure — thin dispatcher
 //-------------------------------------------------------------------------
@@ -641,16 +658,13 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 					if (lplvcd->iSubItem == 2)
 					{
 						char tempStr[16];
-						ListView_GetItemText(pnmh->hwndFrom,
-							(int)lplvcd->nmcd.dwItemSpec, 2,
-							tempStr, sizeof(tempStr));
+						ListView_GetItemText(pnmh->hwndFrom, (int)lplvcd->nmcd.dwItemSpec, 2, tempStr, sizeof(tempStr));
 						int temp = atoi(tempStr);
-						if (temp >= this->IconLevels[2] && this->IconLevels[2] > 0)
-							lplvcd->clrText = RGB(255, 69, 0);     // red-orange
-						else if (temp >= this->IconLevels[1] && this->IconLevels[1] > 0)
-							lplvcd->clrText = RGB(255, 165, 0);   // orange
-						else if (temp >= this->IconLevels[0] && this->IconLevels[0] > 0)
-							lplvcd->clrText = RGB(210, 160, 0);   // dark yellow
+						lplvcd->clrText = GetTempColor(temp, this->IconLevels);
+					}
+					else
+					{
+						lplvcd->clrText = CLR_DEFAULT;
 					}
 					result = CDRF_NEWFONT;
 					break;
@@ -662,7 +676,6 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 				SetWindowLongPtr(hwnd, DWLP_MSGRESULT, result);
 				return TRUE;
 			}
-			// Handle header custom draw for column 2
 			else if (!SlimDialog && pnmh->code == NM_CUSTOMDRAW)
 			{
 				HWND hLV = ::GetDlgItem(hwnd, 8101);
@@ -681,18 +694,9 @@ ULONG FANCONTROL::DlgProc(HWND hwnd, ULONG msg, WPARAM mp1, LPARAM mp2) {
 							break;
 						case CDDS_ITEMPREPAINT:
 						{
-							// Only color column 2 (Temp column)
 							if (lpnmcd->dwItemSpec == 2)
 							{
-								// Determine color based on MaxTemp and IconLevels
-								COLORREF textColor = RGB(0, 0, 0); // default black
-								if (this->MaxTemp >= this->IconLevels[2] && this->IconLevels[2] > 0)
-									textColor = RGB(255, 69, 0);     // red-orange
-								else if (this->MaxTemp >= this->IconLevels[1] && this->IconLevels[1] > 0)
-									textColor = RGB(255, 165, 0);   // orange
-								else if (this->MaxTemp >= this->IconLevels[0] && this->IconLevels[0] > 0)
-									textColor = RGB(210, 160, 0);   // dark yellow
-
+								COLORREF textColor = GetTempColor(this->MaxTemp, this->IconLevels);
 								SetTextColor(lpnmcd->hdc, textColor);
 								result = CDRF_NEWFONT;
 							}
