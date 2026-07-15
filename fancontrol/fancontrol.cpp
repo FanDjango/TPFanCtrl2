@@ -212,8 +212,9 @@ void FANCONTROL::InitDialogWindow() {
 				lvc.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_FMT;
 				lvc.fmt = LVCFMT_LEFT;
 				lvc.cx = 28; lvc.pszText = (LPSTR)"#"; ListView_InsertColumn(hLV, 0, &lvc);
-				lvc.cx = 50; lvc.pszText = (LPSTR)"Name"; ListView_InsertColumn(hLV, 1, &lvc);
-				lvc.cx = 55; lvc.pszText = (LPSTR)"Temp"; ListView_InsertColumn(hLV, 2, &lvc);
+				lvc.cx = 48; lvc.pszText = (LPSTR)"Name"; ListView_InsertColumn(hLV, 1, &lvc);
+				lvc.cx = 50; lvc.pszText = (LPSTR)"Temp"; ListView_InsertColumn(hLV, 2, &lvc);
+				lvc.cx = 42; lvc.pszText = (LPSTR)"EC"; ListView_InsertColumn(hLV, 3, &lvc);
 			}
 		}
 
@@ -1408,6 +1409,8 @@ FANCONTROL::UpdateTempDisplay(void)
 				strcpy_s(buf, sizeof(buf), "n/a");
 			}
 			ListView_SetItemText(hLV, idx, 2, buf);
+			sprintf_s(buf, sizeof(buf), "0x%02x", this->State.SensorAddr[i]);
+			ListView_SetItemText(hLV, idx, 3, buf);
 		}
 	}
 
