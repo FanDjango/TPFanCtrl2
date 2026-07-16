@@ -433,7 +433,7 @@ bool FANCONTROL::SetFan(const char* source, int fanctrl, bool final) {
 				break;
 			}
 
-			::Sleep(300);
+			::Sleep(250);
 		}
 
 		this->FreeECAccess();
@@ -818,15 +818,3 @@ bool FANCONTROL::ReadEcRaw(FCSTATE* pfcstate) {
 
 	return ok;
 }
-
-// Poll EC register until it matches expected value, or timeout (ms)
-bool FANCONTROL::PollECByte(char offset, char* out, int expected, int timeoutMs) {
-	const int tickMs = 10;
-	for (int elapsed = 0; elapsed < timeoutMs; elapsed += tickMs) {
-		if (this->ReadByteFromEC(offset, out) && (unsigned char)*out == (unsigned char)expected)
-			return true;
-		::Sleep(tickMs);
-	}
-	return false;
-}
-
