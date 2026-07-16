@@ -407,16 +407,22 @@ bool FANCONTROL::SetFan(const char* source, int fanctrl, bool final) {
 		if (!this->LockECAccess()) return false;
 
 		for (int i = 0; i < 5; i++) {
-			// set and verify fan1
-			ok      = this->WriteByteToEC(TP_ECOFFSET_FAN_SWITCH, TP_ECVALUE_SELFAN1);
-			ok      = this->WriteByteToEC(TP_ECOFFSET_FAN, fanctrl);
-			fan1_ok = this->PollECByte(TP_ECOFFSET_FAN, &this->State.FanCtrl, fanctrl, 200);
+			// set new fan1 level
+			ok = this->WriteByteToEC(TP_ECOFFSET_FAN_SWITCH, TP_ECVALUE_SELFAN1);
+			ok = this->WriteByteToEC(TP_ECOFFSET_FAN, fanctrl);
+			::Sleep(100);
+			// verify completion of fan1
+			fan1_ok = this->ReadByteFromEC(TP_ECOFFSET_FAN, &this->State.FanCtrl);
+			::Sleep(100);
 
 			if (!SingleFan) {
-				// set and verify fan2
-				ok      = this->WriteByteToEC(TP_ECOFFSET_FAN_SWITCH, TP_ECVALUE_SELFAN2);
-				ok      = this->WriteByteToEC(TP_ECOFFSET_FAN, fanctrl);
-				fan2_ok = this->PollECByte(TP_ECOFFSET_FAN, &this->State.FanCtrl, fanctrl, 200);
+				// set new fan2 level
+				ok = this->WriteByteToEC(TP_ECOFFSET_FAN_SWITCH, TP_ECVALUE_SELFAN2);
+				ok = this->WriteByteToEC(TP_ECOFFSET_FAN, fanctrl);
+				::Sleep(100);
+				// verify completion of fan2
+				fan2_ok = this->ReadByteFromEC(TP_ECOFFSET_FAN, &this->State.FanCtrl);
+				::Sleep(100);
 			}
 			else {
 				fan2_ok = true;
@@ -427,7 +433,7 @@ bool FANCONTROL::SetFan(const char* source, int fanctrl, bool final) {
 				break;
 			}
 
-			::Sleep(100); // reduced from 300ms; EC should be ready sooner on retry
+			::Sleep(300);
 		}
 
 		this->FreeECAccess();
