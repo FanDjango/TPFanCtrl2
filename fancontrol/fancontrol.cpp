@@ -230,6 +230,8 @@ void FANCONTROL::InitDialogWindow() {
 				SendMessageA(hCB, CB_ADDSTRING, 0, (LPARAM)"5");
 				SendMessageA(hCB, CB_ADDSTRING, 0, (LPARAM)"6");
 				SendMessageA(hCB, CB_ADDSTRING, 0, (LPARAM)"7");
+				SendMessageA(hCB, CB_ADDSTRING, 0, (LPARAM)"0x40 (max)");
+				SendMessageA(hCB, CB_ADDSTRING, 0, (LPARAM)"0x80 (BIOS)");
 				char mbuf[16];
 				_itoa_s(this->ManFanSpeed, mbuf, 10);
 				SetWindowTextA(hCB, mbuf);

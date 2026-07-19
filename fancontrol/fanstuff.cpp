@@ -304,7 +304,16 @@ bool FANCONTROL::HandleData(void) {
 			else
 				::GetWindowTextA(::GetDlgItem(this->hwndDialog, 8310), manlevel, sizeof(manlevel));
 
-		int speedVal = strtol(manlevel, NULL, 0);
+		int speedVal;
+
+		if (manlevel[0] == 'x' && manlevel[1] == '\'') {
+			speedVal = strtol(manlevel + 2, NULL, 16);
+		} else if (manlevel[0] == '0' && (manlevel[1] == 'x' || manlevel[1] == 'X')) {
+			speedVal = strtol(manlevel, NULL, 16);
+		} else {
+			speedVal = strtol(manlevel, NULL, 0);
+		}
+
 		if (speedVal >= 0 && speedVal <= 255) {
 			if (this->State.FanCtrl != speedVal)
 				ok = this->SetFan("Manual", speedVal);
