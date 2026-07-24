@@ -25,8 +25,8 @@
 #include "winstuff.h"
 #include "TaskbarTextIcon.h"
 
-constexpr const char* FANCONTROLVERSIONS = "2.3.21 Single Fan";
-constexpr const char* FANCONTROLVERSIOND = "2.3.21 Dual Fan";
+constexpr const char* FANCONTROLVERSIONS = "2.3.22 Single Fan";
+constexpr const char* FANCONTROLVERSIOND = "2.3.22 Dual Fan";
 
 //Pipe name format - \\.\pipe\pipename
 #define g_szPipeName "\\\\.\\Pipe\\TPFanControl01"  //Name given to the pipe
